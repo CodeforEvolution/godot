@@ -61,8 +61,8 @@ def configure(env):
 
     ## Compiler configuration
 
-    env["CC"] = "gcc-x86"
-    env["CXX"] = "g++-x86"
+    env["CC"] = "gcc"
+    env["CXX"] = "g++"
 
     ## Dependencies
 
@@ -138,6 +138,7 @@ def configure(env):
     if not env['builtin_miniupnpc']:
         # No pkgconfig file so far, hardcode default paths.
         env.Prepend(CPPPATH=["/system/develop/headers/x86/miniupnpc"])
+        env.Prepend(CPPPATH=["/system/develop/headers/miniupnpc"])
         env.Append(LIBS=["miniupnpc"])
 
     # On Linux wchar_t should be 32-bits
