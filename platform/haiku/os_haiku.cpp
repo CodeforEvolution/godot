@@ -37,6 +37,8 @@
 #include "servers/visual/visual_server_raster.h"
 #include "servers/visual/visual_server_wrap_mt.h"
 
+#include <Application.h>
+#include <Cursor.h>
 #include <Screen.h>
 
 OS_Haiku::OS_Haiku() {
@@ -55,8 +57,7 @@ void OS_Haiku::run() {
 
 	// TODO: clean up
 	BMessenger *bms = new BMessenger(window);
-	BMessage *msg = new BMessage();
-	bms->SendMessage(LOCKGL_MSG, msg);
+	bms->SendMessage(LOCKGL_MSG);
 
 	window->StartMessageRunner();
 	app->Run();
@@ -65,7 +66,6 @@ void OS_Haiku::run() {
 	delete app;
 
 	delete bms;
-	delete msg;
 	main_loop->finish();
 }
 
@@ -92,19 +92,39 @@ Error OS_Haiku::initialize(const VideoMode &p_desired, int p_video_driver, int p
 	app = new HaikuApplication();
 
 	BRect frame;
-	frame.Set(50, 50, 50 + current_video_mode.width - 1, 50 + current_video_mode.height - 1);
+	frame.Set(0, 0, current_video_mode.width - 1, current_video_mode.height - 1);
 
 	window = new HaikuDirectWindow(frame);
 	window->SetVideoMode(&current_video_mode);
 
+	float tempMinWidth;
+	float tempMaxWidth;
+	float tempMinHeight;
+	float tempMaxHeight;
+	
+	window->GetSizeLimits(&tempMinWidth, &tempMaxWidth, &tempMinHeight, &tempMaxHeight);
+	
+	min_size = Size2(tempMinWidth, tempMinHeight);
+	max_size = Size2(tempMaxWidth, tempMaxHeight);
+	
 	if (current_video_mode.fullscreen) {
-		window->SetFullScreen(true);
+		current_video_mode.fullscreen = false;
+		set_window_fullscreen(true);
 	}
-
-	if (!current_video_mode.resizable) {
-		uint32 flags = window->Flags();
-		flags |= B_NOT_RESIZABLE;
-		window->SetFlags(flags);
+	
+	if (current_video_mode.resizable) {
+		current_video_mode.resizable = false;
+		set_window_resizable(true);
+	}
+	
+	if (current_video_mode.always_on_top) {
+		current_video_mode.always_on_top = false;
+		set_window_always_on_top(true);
+	}
+	
+	if (current_video_mode.borderless) {
+		current_video_mode.borderless = false;
+		set_borderless_window(true);
 	}
 
 #if defined(OPENGL_ENABLED)
@@ -183,8 +203,7 @@ void OS_Haiku::make_rendering_thread() {
 }
 
 bool OS_Haiku::can_draw() const {
-	// TODO: implement
-	return true;
+	return !window->IsMinimized();
 }
 
 void OS_Haiku::swap_buffers() {
@@ -199,12 +218,53 @@ int OS_Haiku::get_mouse_button_state() const {
 	return window->GetLastButtonMask();
 }
 
+void OS_Haiku::alert(const String &p_alert, const String &p_title) {
+	BAlert *alert = New BAlert(p_title.utf8().get_data(),
+				   p_alert.utf8().get_data(),
+				   "OK", NULL, NULL, B_WIDTH_AS_USUAL,
+				   B_WARNING_ALERT);
+	alert->Go(NULL);
+	delete alert;
+}
+
 void OS_Haiku::set_cursor_shape(CursorShape p_shape) {
-	//ERR_PRINT("set_cursor_shape() NOT IMPLEMENTED");
+	ERR_FAIL_INDEX(p_shape, CURSOR_MAX);
+	
+	if (cursor_shape == p_shape)
+		return;
+
+	if (mouse_mode != MOUSE_MODE_VISIBLE && mouse_mode != MOUSE_MODE_CONFINED) {
+		cursor_shape = p_shape;
+		return;
+	}
+	
+	static const BCursorID native_cursors[CURSOR_MAX] = {
+		B_CURSOR_ID_SYSTEM_DEFAULT,
+		B_CURSOR_ID_I_BEAM,
+		B_CURSOR_ID_FOLLOW_LINK,
+		B_CURSOR_ID_CROSS_HAIR,
+		B_CURSOR_ID_PROGRESS,
+		B_CURSOR_ID_PROGRESS,
+		B_CURSOR_ID_GRABBING,
+		B_CURSOR_ID_GRAB,
+		B_CURSOR_ID_NOT_ALLOWED,
+		B_CURSOR_ID_RESIZE_NORTH_SOUTH,
+		B_CURSOR_ID_RESIZE_EAST_WEST,
+		B_CURSOR_ID_RESIZE_NORTH_EAST_SOUTH_WEST,
+		B_CURSOR_ID_RESIZE_NORTH_WEST_SOUTH_EAST,
+		B_CURSOR_ID_MOVE,
+		B_CURSOR_ID_RESIZE_NORTH_SOUTH,
+		B_CURSOR_ID_RESIZE_EAST_WEST,
+		B_CURSOR_ID_HELP
+	};
+
+	be_app->SetCursor(new BCursor(native_cursors[p_shape]));
+
+	cursor_shape = p_shape;
 }
 
 OS::CursorShape OS_Haiku::get_cursor_shape() const {
-	// TODO: implement get_cursor_shape
+	return cursor_shape;
 }
 
 void OS_Haiku::set_custom_mouse_cursor(const RES &p_cursor, CursorShape p_shape, const Vector2 &p_hotspot) {
@@ -253,6 +313,34 @@ Size2 OS_Haiku::get_window_size() const {
 void OS_Haiku::set_window_size(const Size2 p_size) {
 	// TODO: why does it stop redrawing after this is called?
 	window->ResizeTo(p_size.x, p_size.y);
+}
+
+Size2 OS_Haiku::get_max_window_size() const {
+	return max_size;
+};
+
+void OS_Haiku::set_max_window_size(const Size2 p_size) {
+	if ((p_size != Size2()) && ((p_size.x < min_size.x) || (p_size.y < min_size.y))) {
+		ERR_PRINT("Maximum window size can't be smaller than minimum window size!");
+		return;
+	}
+	
+	window->SetSizeLimits(min_size.width, p_size.width, min_size.height, p_size.height);
+	max_size = p_size;
+}
+
+Size2 OS_Haiku::get_min_window_size() const {
+	return min_size;
+};
+
+void OS_Haiku::set_min_window_size(const Size2 p_size) {
+	if ((p_size != Size2()) && (max_size != Size2()) && ((p_size.x > max_size.x) || (p_size.y > max_size.y))) {
+		ERR_PRINT("Minimum window size can't be larger than maximum window size!");
+		return;
+	}
+	
+	window->SetSizeLimits(p_size.width, max_size.width, p_size.height, max_size.height);
+	min_size = p_size;
 }
 
 Point2 OS_Haiku::get_window_position() const {
@@ -308,8 +396,42 @@ bool OS_Haiku::is_window_maximized() const {
 	return !window->IsMinimized();
 }
 
+void OS_Haiku::set_window_always_on_top(bool p_enabled) {
+	if (current_video_mode.always_on_top == p_enabled)
+		return;
+
+	status_t result = window->SetFeel(p_enabled ? B_FLOATING_ALL_WINDOW_FEEL :
+						      B_NORMAL_WINDOW_FEEL);
+	
+	if (result == B_OK)
+		current_video_mode.always_on_top = p_enabled;
+}
+
+bool OS_Haiku::is_window_always_on_top() const {
+	return current_video_mode.always_on_top;
+}
+
+bool OS_Haiku::is_window_focused() const {
+	return window->IsActive();	
+}
+
+void OS_Haiku::set_borderless_window(bool p_borderless) {
+	if (current_video_mode.borderless == p_borderless)
+		return;
+	
+	status_t result = window->SetLook(p_borderless ? B_NO_BORDER_WINDOW_LOOK :
+							 B_DOCUMENT_WINDOW_LOOK);
+	
+	if (result == B_OK)
+		current_video_mode.borderless = p_borderless;
+}
+
+bool OS_Haiku::get_borderless_window() {
+	return current_video_mode.borderless;
+}
+
 void OS_Haiku::set_video_mode(const VideoMode &p_video_mode, int p_screen) {
-	ERR_PRINT("set_video_mode() NOT IMPLEMENTED");
+	ERR_PRINT("set_video_mode() DEPRECATED");
 }
 
 OS::VideoMode OS_Haiku::get_video_mode(int p_screen) const {
@@ -317,7 +439,7 @@ OS::VideoMode OS_Haiku::get_video_mode(int p_screen) const {
 }
 
 void OS_Haiku::get_fullscreen_mode_list(List<VideoMode> *p_list, int p_screen) const {
-	ERR_PRINT("get_fullscreen_mode_list() NOT IMPLEMENTED");
+	ERR_PRINT("get_fullscreen_mode_list() DEPRECATED");
 }
 
 String OS_Haiku::get_executable_path() const {
