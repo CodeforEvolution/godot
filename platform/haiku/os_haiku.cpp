@@ -38,7 +38,9 @@
 #include "servers/visual/visual_server_wrap_mt.h"
 
 #include <Application.h>
+#include <Clipboard.h>
 #include <Cursor.h>
+#include <LocaleRoster.h>
 #include <Screen.h>
 
 OS_Haiku::OS_Haiku() {
@@ -83,6 +85,12 @@ const char *OS_Haiku::get_video_driver_name(int p_driver) const {
 
 int OS_Haiku::get_current_video_driver() const {
 	return video_driver_index;
+}
+
+void OS_Haiku::initialize_core() {
+	crash_handler.initialize();
+
+	OS_Unix::initialize_core();
 }
 
 Error OS_Haiku::initialize(const VideoMode &p_desired, int p_video_driver, int p_audio_driver) {
@@ -208,6 +216,44 @@ bool OS_Haiku::can_draw() const {
 
 void OS_Haiku::swap_buffers() {
 	context_gl->swap_buffers();
+}
+
+void set_clipboard(const String &p_text) {
+	if (!be_clipboard->Lock())
+		return;
+
+	be_clipboard->Clear();
+	BMessage *clipData = be_clipboard->Data();
+	if (clipData == NULL)
+		return;
+
+	BString string(p_text.utf8().get_data());
+	clipData->AddData("text/plain", B_MIME_TYPE, string.String(), string.Length());
+	be_clipboard->Commit();
+
+	be_clipboard->Unlock();
+}
+
+String get_clipboard() const {
+	if (!be_clipboard->Lock())
+		return "";
+	
+	BMessage *clipData = be_clipboard->Data();
+	if (clipData == NULL)
+		return "";
+
+	const char* buffer;
+	ssize_t bufferLength;
+	data->FindData(type.utf8().data(), B_MIME_TYPE,
+		reinterpret_cast<const void**>(&buffer), &bufferLength);
+	
+	BString clipStr;
+	clipStr.SetTo(buffer, bufferLength);
+	
+	String outStr;
+	outStr.parse_utf8(clipStr.String());
+	
+	return outStr;
 }
 
 Point2 OS_Haiku::get_mouse_position() const {
@@ -430,6 +476,23 @@ bool OS_Haiku::get_borderless_window() {
 	return current_video_mode.borderless;
 }
 
+void OS_Haiku::move_window_to_foreground() {
+	window->Activate();	
+}
+
+String OS_Haiku::get_locale() {
+	BMessage preferredLanguages;
+	BLocaleRoster::Default()->GetPreferredLanguages(&preferredLanguages);
+	const char* firstPreferredLanguage;
+	if (preferredLanguages.FindString("language", &firstPreferredLanguage)
+			!= B_OK) {
+		// Default to English
+		firstPreferredLanguage = "en";
+	}
+
+	return firstPreferredLanguage;
+}
+
 void OS_Haiku::set_video_mode(const VideoMode &p_video_mode, int p_screen) {
 	ERR_PRINT("set_video_mode() DEPRECATED");
 }
@@ -443,16 +506,33 @@ void OS_Haiku::get_fullscreen_mode_list(List<VideoMode> *p_list, int p_screen) c
 }
 
 String OS_Haiku::get_executable_path() const {
+	char pathBuffer[B_PATH_NAME_LENGTH];		
+	image_info info;
+	int32 cookie = 0;
+
+	while (get_next_image_info(team, &cookie, &info) == B_OK) {
+		if (info.type == B_APP_IMAGE) {
+			strlcpy(pathBuffer, info.name, B_PATH_NAME_LENGTH - 1);
+
+			String path;
+			path.parse_utf8(pathBuffer);
+			return path;
+		}
+	}
+	
 	return OS::get_executable_path();
 }
 
-bool OS_Haiku::_check_internal_feature_support(const String &p_feature) {
+String get_unique_id() const {
+	ERR_PRINT("get_unique_id() NOT IMPLEMENTED");
+	return "";
+}
 
+bool OS_Haiku::_check_internal_feature_support(const String &p_feature) {
 	return p_feature == "pc";
 }
 
 String OS_Haiku::get_config_path() const {
-
 	if (has_environment("XDG_CONFIG_HOME")) {
 		return get_environment("XDG_CONFIG_HOME");
 	} else if (has_environment("HOME")) {
@@ -463,7 +543,6 @@ String OS_Haiku::get_config_path() const {
 }
 
 String OS_Haiku::get_data_path() const {
-
 	if (has_environment("XDG_DATA_HOME")) {
 		return get_environment("XDG_DATA_HOME");
 	} else if (has_environment("HOME")) {
@@ -474,7 +553,6 @@ String OS_Haiku::get_data_path() const {
 }
 
 String OS_Haiku::get_cache_path() const {
-
 	if (has_environment("XDG_CACHE_HOME")) {
 		return get_environment("XDG_CACHE_HOME");
 	} else if (has_environment("HOME")) {
@@ -482,6 +560,49 @@ String OS_Haiku::get_cache_path() const {
 	} else {
 		return get_config_path();
 	}
+}
+
+Error OS_Haiku::move_to_trash(const String &p_path) {
+	// Find device the path is on
+	dev_t trashDev = dev_for_path(p_path);
+	if (dev_t < B_NO_ERROR)
+		return FAILURE;
+
+	// Create BVolume representing the volume the path is located on
+	BVolume *trashVol = new BVolume(trashDev);
+	if (trashVol == NULL || trashVol->InitCheck() != B_OK)
+		return FAILURE;
+
+	// Find trash directory on volume
+	BPath trashPath;
+	if (find_directory(B_TRASH_DIRECTORY, &trashPath, true, trashVol) != B_OK)
+		return FAILURE;
+
+	// Create BDirectory representing the trash directory
+	BDirectory *trashDir = new BDirectory(trashPath.Path());
+	if (trashDir == NULL || trashDir->InitCheck() != B_OK)
+		return FAILURE;
+
+	// Create BEntry representing file to move to trash
+	BEntry *fileEntry = new BEntry(p_path);
+	if (fileEntry == NULL || fileEntry->InitCheck() != B_OK)
+		return FAILURE;
+
+	// Do it now!
+	if (fileEntry->MoveTo(trashDir) != B_OK) {
+		// That was anti-climatic...
+		return FAILURE;
+	}
+
+	return OK;
+}
+
+void OS_Haiku::disable_crash_handler() {
+	crash_handler.disable();
+}
+
+bool OS_Haiku::is_disable_crash_handler() const {
+	return crash_handler.is_disabled();
 }
 
 OS::PowerState OS_Haiku::get_power_state() {
