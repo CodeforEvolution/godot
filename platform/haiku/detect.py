@@ -1,4 +1,5 @@
 import os
+import platform
 import sys
 
 
@@ -152,8 +153,8 @@ def configure(env):
 
     ## Flags
 
-    env.Prepend(CPPPATH=["#platform/haiku"])
-    env.Append(CPPDEFINES=["UNIX_ENABLED", "OPENGL_ENABLED", "GLES_ENABLED"])
-    env.Append(CPPDEFINES=["MEDIA_KIT_ENABLED"])
-    env.Append(CPPDEFINES=["PTHREAD_NO_RENAME"])  # TODO: enable when we have pthread_setname_np
-    env.Append(LIBS=["be", "game", "media", "network", "bnetapi", "z", "GL"])
+    env.Prepend(CPPPATH=['#platform/haiku'])
+    env.Append(CPPDEFINES=['UNIX_ENABLED', 'OPENGL_ENABLED', 'GLES_ENABLED'])
+    env.Append(CPPDEFINES=['MEDIA_KIT_ENABLED'])
+    env.Append(CPPDEFINES=['PTHREAD_NO_RENAME'])  # TODO: enable when we have pthread_setname_np
+    env.Append(LIBS=['stdc++', 'root', 'be', 'game', 'media', 'network', 'bnetapi', 'z', 'GL'])

@@ -136,6 +136,7 @@ String DirAccessUnix::get_next() {
 
 	String fname = fix_unicode_name(entry->d_name);
 
+#if !defined(__HAIKU__)
 	// Look at d_type to determine if the entry is a directory, unless
 	// its type is unknown (the file system does not support it) or if
 	// the type is a link, in that case we want to resolve the link to
@@ -153,6 +154,26 @@ String DirAccessUnix::get_next() {
 	} else {
 		_cisdir = (entry->d_type == DT_DIR);
 	}
+#else
+	String f = current_dir.plus_file(fname);
+
+	struct stat flags;
+	if (stat(f.utf8().get_data(), &flags) == 0) {
+
+		if (S_ISDIR(flags.st_mode)) {
+
+			_cisdir = true;
+
+		} else {
+
+			_cisdir = false;
+		}
+
+	} else {
+
+		_cisdir = false;
+	}
+#endif
 
 	_cishidden = (fname != "." && fname != ".." && fname.begins_with("."));
 

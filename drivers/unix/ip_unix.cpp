@@ -65,7 +65,13 @@
 #ifdef __FreeBSD__
 #include <sys/types.h>
 #endif
+#if defined(__HAIKU__)
+#define _DEFAULT_SOURCE
+#include <bsd/ifaddrs.h>
+#undef _DEFAULT_SOURCE
+#else
 #include <ifaddrs.h>
+#endif
 #endif
 #include <arpa/inet.h>
 #include <sys/socket.h>
