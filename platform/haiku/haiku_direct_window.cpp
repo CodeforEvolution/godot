@@ -168,21 +168,21 @@ void HaikuDirectWindow::HandleMouseButton(BMessage *message) {
 	switch (button) {
 		default:
 		case B_PRIMARY_MOUSE_BUTTON:
-			mouse_event->set_button_index(1);
+			mouse_event->set_button_index(BUTTON_LEFT);
 			break;
 
 		case B_SECONDARY_MOUSE_BUTTON:
-			mouse_event->set_button_index(2);
+			mouse_event->set_button_index(BUTTON_RIGHT);
 			break;
 
 		case B_TERTIARY_MOUSE_BUTTON:
-			mouse_event->set_button_index(3);
+			mouse_event->set_button_index(BUTTON_MIDDLE);
 			break;
 	}
 
 	mouse_event->set_pressed(message->what == B_MOUSE_DOWN);
 
-	if (message->what == B_MOUSE_DOWN && mouse_event->get_button_index() == 1) {
+	if (message->what == B_MOUSE_DOWN && mouse_event->get_button_index() == BUTTON_LEFT) {
 		int32 clicks = message->FindInt32("clicks");
 
 		if (clicks > 1) {
@@ -238,7 +238,7 @@ void HaikuDirectWindow::HandleMouseWheelChanged(BMessage *message) {
 	mouse_event.instance();
 	//GetKeyModifierState(mouse_event, modifiers);
 
-	mouse_event->set_button_index(wheel_delta_y < 0 ? 4 : 5);
+	mouse_event->set_button_index(wheel_delta_y < 0 ? BUTTON_WHEEL_UP : BUTTON_WHEEL_DOWN);
 	mouse_event->set_button_mask(last_button_mask);
 	mouse_event->set_position({ last_mouse_position.x,
 			last_mouse_position.y });
@@ -336,23 +336,21 @@ inline void HaikuDirectWindow::GetKeyModifierState(Ref<InputEventWithModifiers> 
 	event->set_control(p_state & B_CONTROL_KEY);
 	event->set_alt(p_state & B_OPTION_KEY);
 	event->set_metakey(p_state & B_COMMAND_KEY);
-
-	return state;
 }
 
 inline int HaikuDirectWindow::GetMouseButtonState(uint32 p_state) {
 	int state = 0;
 
 	if (p_state & B_PRIMARY_MOUSE_BUTTON) {
-		state |= 1 << 0;
+		state |= BUTTON_MASK_LEFT;
 	}
 
 	if (p_state & B_SECONDARY_MOUSE_BUTTON) {
-		state |= 1 << 1;
+		state |= BUTTON_MASK_RIGHT;
 	}
 
 	if (p_state & B_TERTIARY_MOUSE_BUTTON) {
-		state |= 1 << 2;
+		state |= BUTTON_MASK_MIDDLE;
 	}
 
 	last_button_mask = state;

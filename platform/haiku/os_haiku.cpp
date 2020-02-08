@@ -37,11 +37,18 @@
 #include "servers/visual/visual_server_raster.h"
 #include "servers/visual/visual_server_wrap_mt.h"
 
+#include <Alert.h>
 #include <Application.h>
 #include <Clipboard.h>
 #include <Cursor.h>
+#include <Directory.h>
+#include <Entry.h>
+#include <FindDirectory.h>
+#include <kernel/fs_info.h>
 #include <LocaleRoster.h>
+#include <Path.h>
 #include <Screen.h>
+#include <Volume.h>
 
 OS_Haiku::OS_Haiku() {
 #ifdef MEDIA_KIT_ENABLED
@@ -88,8 +95,6 @@ int OS_Haiku::get_current_video_driver() const {
 }
 
 void OS_Haiku::initialize_core() {
-	crash_handler.initialize();
-
 	OS_Unix::initialize_core();
 }
 
@@ -130,8 +135,8 @@ Error OS_Haiku::initialize(const VideoMode &p_desired, int p_video_driver, int p
 		set_window_always_on_top(true);
 	}
 	
-	if (current_video_mode.borderless) {
-		current_video_mode.borderless = false;
+	if (current_video_mode.borderless_window) {
+		current_video_mode.borderless_window = false;
 		set_borderless_window(true);
 	}
 
@@ -218,7 +223,7 @@ void OS_Haiku::swap_buffers() {
 	context_gl->swap_buffers();
 }
 
-void set_clipboard(const String &p_text) {
+void OS_Haiku::set_clipboard(const String &p_text) {
 	if (!be_clipboard->Lock())
 		return;
 
@@ -228,13 +233,14 @@ void set_clipboard(const String &p_text) {
 		return;
 
 	BString string(p_text.utf8().get_data());
-	clipData->AddData("text/plain", B_MIME_TYPE, string.String(), string.Length());
+	clipData->AddData("text/plain", B_MIME_TYPE,
+		string.String(), string.Length());
 	be_clipboard->Commit();
 
 	be_clipboard->Unlock();
 }
 
-String get_clipboard() const {
+String OS_Haiku::get_clipboard() const {
 	if (!be_clipboard->Lock())
 		return "";
 	
@@ -244,7 +250,7 @@ String get_clipboard() const {
 
 	const char* buffer;
 	ssize_t bufferLength;
-	data->FindData(type.utf8().data(), B_MIME_TYPE,
+	clipData->FindData("text/plain", B_MIME_TYPE,
 		reinterpret_cast<const void**>(&buffer), &bufferLength);
 	
 	BString clipStr;
@@ -265,7 +271,7 @@ int OS_Haiku::get_mouse_button_state() const {
 }
 
 void OS_Haiku::alert(const String &p_alert, const String &p_title) {
-	BAlert *alert = New BAlert(p_title.utf8().get_data(),
+	BAlert *alert = new BAlert(p_title.utf8().get_data(),
 				   p_alert.utf8().get_data(),
 				   "OK", NULL, NULL, B_WIDTH_AS_USUAL,
 				   B_WARNING_ALERT);
@@ -279,10 +285,10 @@ void OS_Haiku::set_cursor_shape(CursorShape p_shape) {
 	if (cursor_shape == p_shape)
 		return;
 
-	if (mouse_mode != MOUSE_MODE_VISIBLE && mouse_mode != MOUSE_MODE_CONFINED) {
-		cursor_shape = p_shape;
-		return;
-	}
+//	if (mouse_mode != MOUSE_MODE_VISIBLE && mouse_mode != MOUSE_MODE_CONFINED) {
+//		cursor_shape = p_shape;
+//		return;
+//	}
 	
 	static const BCursorID native_cursors[CURSOR_MAX] = {
 		B_CURSOR_ID_SYSTEM_DEFAULT,
@@ -462,25 +468,25 @@ bool OS_Haiku::is_window_focused() const {
 }
 
 void OS_Haiku::set_borderless_window(bool p_borderless) {
-	if (current_video_mode.borderless == p_borderless)
+	if (current_video_mode.borderless_window == p_borderless)
 		return;
 	
 	status_t result = window->SetLook(p_borderless ? B_NO_BORDER_WINDOW_LOOK :
 							 B_DOCUMENT_WINDOW_LOOK);
 	
 	if (result == B_OK)
-		current_video_mode.borderless = p_borderless;
+		current_video_mode.borderless_window = p_borderless;
 }
 
 bool OS_Haiku::get_borderless_window() {
-	return current_video_mode.borderless;
+	return current_video_mode.borderless_window;
 }
 
 void OS_Haiku::move_window_to_foreground() {
 	window->Activate();	
 }
 
-String OS_Haiku::get_locale() {
+String OS_Haiku::get_locale() const {
 	BMessage preferredLanguages;
 	BLocaleRoster::Default()->GetPreferredLanguages(&preferredLanguages);
 	const char* firstPreferredLanguage;
@@ -510,7 +516,7 @@ String OS_Haiku::get_executable_path() const {
 	image_info info;
 	int32 cookie = 0;
 
-	while (get_next_image_info(team, &cookie, &info) == B_OK) {
+	while (get_next_image_info(B_CURRENT_TEAM, &cookie, &info) == B_OK) {
 		if (info.type == B_APP_IMAGE) {
 			strlcpy(pathBuffer, info.name, B_PATH_NAME_LENGTH - 1);
 
@@ -521,11 +527,6 @@ String OS_Haiku::get_executable_path() const {
 	}
 	
 	return OS::get_executable_path();
-}
-
-String get_unique_id() const {
-	ERR_PRINT("get_unique_id() NOT IMPLEMENTED");
-	return "";
 }
 
 bool OS_Haiku::_check_internal_feature_support(const String &p_feature) {
@@ -564,45 +565,37 @@ String OS_Haiku::get_cache_path() const {
 
 Error OS_Haiku::move_to_trash(const String &p_path) {
 	// Find device the path is on
-	dev_t trashDev = dev_for_path(p_path);
-	if (dev_t < B_NO_ERROR)
-		return FAILURE;
+	dev_t trashDev = dev_for_path(p_path.utf8().get_data());
+	if (trashDev < B_NO_ERROR)
+		return FAILED;
 
 	// Create BVolume representing the volume the path is located on
 	BVolume *trashVol = new BVolume(trashDev);
 	if (trashVol == NULL || trashVol->InitCheck() != B_OK)
-		return FAILURE;
+		return FAILED;
 
 	// Find trash directory on volume
 	BPath trashPath;
 	if (find_directory(B_TRASH_DIRECTORY, &trashPath, true, trashVol) != B_OK)
-		return FAILURE;
+		return FAILED;
 
 	// Create BDirectory representing the trash directory
 	BDirectory *trashDir = new BDirectory(trashPath.Path());
 	if (trashDir == NULL || trashDir->InitCheck() != B_OK)
-		return FAILURE;
+		return FAILED;
 
 	// Create BEntry representing file to move to trash
-	BEntry *fileEntry = new BEntry(p_path);
+	BEntry *fileEntry = new BEntry(p_path.utf8().get_data());
 	if (fileEntry == NULL || fileEntry->InitCheck() != B_OK)
-		return FAILURE;
+		return FAILED;
 
 	// Do it now!
 	if (fileEntry->MoveTo(trashDir) != B_OK) {
 		// That was anti-climatic...
-		return FAILURE;
+		return FAILED;
 	}
 
 	return OK;
-}
-
-void OS_Haiku::disable_crash_handler() {
-	crash_handler.disable();
-}
-
-bool OS_Haiku::is_disable_crash_handler() const {
-	return crash_handler.is_disabled();
 }
 
 OS::PowerState OS_Haiku::get_power_state() {
