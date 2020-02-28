@@ -28,7 +28,7 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#include "drivers/gles3/rasterizer_gles3.h"
+#include "drivers/gles2/rasterizer_gles2.h"
 
 #include "os_haiku.h"
 
@@ -62,7 +62,7 @@ void OS_Haiku::run() {
 	}
 
 	main_loop->init();
-	context_gl->release_current();
+	context_gl->make_current();
 
 	// TODO: clean up
 	BMessenger *bms = new BMessenger(window);
@@ -87,7 +87,7 @@ int OS_Haiku::get_video_driver_count() const {
 }
 
 const char *OS_Haiku::get_video_driver_name(int p_driver) const {
-	return "GLES3";
+	return "GLES2";
 }
 
 int OS_Haiku::get_current_video_driver() const {
@@ -104,10 +104,7 @@ Error OS_Haiku::initialize(const VideoMode &p_desired, int p_video_driver, int p
 
 	app = new HaikuApplication();
 
-	BRect frame;
-	frame.Set(0, 0, current_video_mode.width - 1, current_video_mode.height - 1);
-
-	window = new HaikuDirectWindow(frame);
+	window = new HaikuDirectWindow(BRect(0, 0, current_video_mode.width - 1, current_video_mode.height - 1));
 	window->SetVideoMode(&current_video_mode);
 
 	float tempMinWidth;
@@ -145,9 +142,15 @@ Error OS_Haiku::initialize(const VideoMode &p_desired, int p_video_driver, int p
 	context_gl->initialize();
 	context_gl->make_current();
 	context_gl->set_use_vsync(current_video_mode.use_vsync);
-	RasterizerGLES3::register_config();
-	RasterizerGLES3::make_current();
-
+	
+	if (RasterizerGLES2::is_viable() == OK) {
+		RasterizerGLES2::register_config();
+		RasterizerGLES2::make_current();
+	} else {
+		OS::get_singleton()->alert("There was an error setting up the OpenGL rasterizer.",
+			"Unable to initialize Video driver");
+		return ERR_UNAVAILABLE;
+	}
 #endif
 
 	visual_server = memnew(VisualServerRaster);

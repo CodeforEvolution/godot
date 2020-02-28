@@ -238,6 +238,8 @@ else:
         selected_platform = 'osx'
     elif sys.platform == 'win32':
         selected_platform = 'windows'
+    elif sys.platform.startswith('haiku'):
+        selected_platform = 'haiku'
     else:
         print("Could not detect platform automatically. Supported platforms:")
         for x in platform_list:

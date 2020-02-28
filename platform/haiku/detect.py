@@ -84,12 +84,12 @@ def configure(env):
         env.ParseConfig('pkg-config libpng16 --cflags --libs')
 
     if not env['builtin_bullet']:
-        # We need at least version 2.88
+        # We need at least version 2.89
         import subprocess
         bullet_version = subprocess.check_output(['pkg-config', 'bullet', '--modversion']).strip()
-        if bullet_version < "2.88":
+        if str(bullet_version) < "2.89":
             # Abort as system bullet was requested but too old
-            print("Bullet: System version {0} does not match minimal requirements ({1}). Aborting.".format(bullet_version, "2.88"))
+            print("Bullet: System version {0} does not match minimal requirements ({1}). Aborting.".format(bullet_version, "2.89"))
             sys.exit(255)
         env.ParseConfig('pkg-config bullet --cflags --libs')
 
@@ -138,8 +138,8 @@ def configure(env):
 
     if not env['builtin_miniupnpc']:
         # No pkgconfig file so far, hardcode default paths.
-        env.Prepend(CPPPATH=["/system/develop/headers/x86/miniupnpc"])
         env.Prepend(CPPPATH=["/system/develop/headers/miniupnpc"])
+        env.Prepend(CPPPATH=["/system/develop/headers/x86/miniupnpc"])
         env.Append(LIBS=["miniupnpc"])
 
     # On Linux wchar_t should be 32-bits
@@ -153,4 +153,4 @@ def configure(env):
     env.Append(CPPDEFINES=['UNIX_ENABLED', 'OPENGL_ENABLED', 'GLES_ENABLED'])
     env.Append(CPPDEFINES=['MEDIA_KIT_ENABLED'])
     env.Append(CPPDEFINES=['PTHREAD_NO_RENAME'])  # TODO: enable when we have pthread_setname_np
-    env.Append(LIBS=['stdc++', 'root', 'be', 'game', 'media', 'network', 'bnetapi', 'z', 'GL'])
+    env.Append(LIBS=['be', 'game', 'media', 'network', 'bnetapi', 'z', 'GL'])

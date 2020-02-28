@@ -53,6 +53,7 @@ private:
 	CursorShape cursor_shape;
 	Size2 min_size;
 	Size2 max_size;
+	bool minimized;
 
 #ifdef MEDIA_KIT_ENABLED
 	AudioDriverMediaKit driver_media_kit;
