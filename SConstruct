@@ -268,12 +268,14 @@ elif env_base["p"] != "":
     env_base["platform"] = selected_platform
 else:
     # Missing `platform` argument, try to detect platform automatically
-    if sys.platform.startswith("linux"):
-        selected_platform = "x11"
-    elif sys.platform == "darwin":
-        selected_platform = "osx"
-    elif sys.platform == "win32":
-        selected_platform = "windows"
+    if sys.platform.startswith('linux'):
+        selected_platform = 'x11'
+    elif sys.platform == 'darwin':
+        selected_platform = 'osx'
+    elif sys.platform == 'win32':
+        selected_platform = 'windows'
+    elif sys.platform.startswith('haiku'):
+        selected_platform = 'haiku'
     else:
         print("Could not detect platform automatically. Supported platforms:")
         for x in platform_list:
