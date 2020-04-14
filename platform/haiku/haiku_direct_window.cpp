@@ -133,6 +133,13 @@ void HaikuDirectWindow::DispatchMessage(BMessage *message, BHandler *handler) {
 			view->UnlockGL();
 			break;
 
+		case MAKEFOCUS_MSG: {
+			bool focus;
+			if (message->FindBool("focus", &focus) == B_OK) {
+				view->MakeFocus(focus);
+			}
+		} 	break;
+
 		default:
 			BDirectWindow::DispatchMessage(message, handler);
 	}

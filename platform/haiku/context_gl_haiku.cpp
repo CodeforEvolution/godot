@@ -80,4 +80,8 @@ bool ContextGL_Haiku::is_using_vsync() const {
 	return use_vsync;
 }
 
+void ContextGL_Haiku::make_focus(bool p_focus) {
+	view->MakeFocus(p_focus);
+}
+
 #endif

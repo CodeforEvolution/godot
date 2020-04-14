@@ -54,6 +54,8 @@ public:
 	void set_use_vsync(bool p_use);
 	bool is_using_vsync() const;
 
+	void make_focus(bool p_focus);
+
 	ContextGL_Haiku(HaikuDirectWindow *p_window);
 	~ContextGL_Haiku();
 };

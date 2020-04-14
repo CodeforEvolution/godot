@@ -43,6 +43,7 @@
 #define REDRAW_MSG 'rdrw'
 #define LOCKGL_MSG 'glck'
 #define UNLOCKGL_MSG 'ulck'
+#defome MAKEFOCUS_MSG 'mkfc'
 
 class HaikuDirectWindow : public BDirectWindow {
 private:
@@ -75,6 +76,7 @@ public:
 	void StartMessageRunner();
 	void StopMessageRunner();
 	void SetInput(InputDefault *p_input);
+	inline void SetGrabCursorMode(bool p_enabled) { cursor_grab_mode = p_enabled; };
 	void SetMainLoop(MainLoop *p_main_loop);
 	inline void SetVideoMode(OS::VideoMode *video_mode) { current_video_mode = video_mode; };
 	virtual bool QuitRequested();

@@ -57,16 +57,15 @@ OS_Haiku::OS_Haiku() {
 };
 
 void OS_Haiku::run() {
-	if (!main_loop) {
+	if (!main_loop)
 		return;
-	}
 
 	main_loop->init();
-	context_gl->make_current();
+	//context_gl->make_current();
 
 	// TODO: clean up
-	BMessenger *bms = new BMessenger(window);
-	bms->SendMessage(LOCKGL_MSG);
+//	BMessenger *bms = new BMessenger(window);
+//	bms->SendMessage(LOCKGL_MSG);
 
 	window->StartMessageRunner();
 	app->Run();
@@ -74,7 +73,7 @@ void OS_Haiku::run() {
 
 	delete app;
 
-	delete bms;
+//	delete bms;
 	main_loop->finish();
 }
 
@@ -111,27 +110,27 @@ Error OS_Haiku::initialize(const VideoMode &p_desired, int p_video_driver, int p
 	float tempMaxWidth;
 	float tempMinHeight;
 	float tempMaxHeight;
-	
+
 	window->GetSizeLimits(&tempMinWidth, &tempMaxWidth, &tempMinHeight, &tempMaxHeight);
-	
+
 	min_size = Size2(tempMinWidth, tempMinHeight);
 	max_size = Size2(tempMaxWidth, tempMaxHeight);
-	
+
 	if (current_video_mode.fullscreen) {
 		current_video_mode.fullscreen = false;
 		set_window_fullscreen(true);
 	}
-	
+
 	if (current_video_mode.resizable) {
 		current_video_mode.resizable = false;
 		set_window_resizable(true);
 	}
-	
+
 	if (current_video_mode.always_on_top) {
 		current_video_mode.always_on_top = false;
 		set_window_always_on_top(true);
 	}
-	
+
 	if (current_video_mode.borderless_window) {
 		current_video_mode.borderless_window = false;
 		set_borderless_window(true);
@@ -142,13 +141,13 @@ Error OS_Haiku::initialize(const VideoMode &p_desired, int p_video_driver, int p
 	context_gl->initialize();
 	context_gl->make_current();
 	context_gl->set_use_vsync(current_video_mode.use_vsync);
-	
+
 	if (RasterizerGLES2::is_viable() == OK) {
 		RasterizerGLES2::register_config();
 		RasterizerGLES2::make_current();
 	} else {
 		OS::get_singleton()->alert("There was an error setting up the OpenGL rasterizer.",
-			"Unable to initialize Video driver");
+			"Unable to initialize video driver");
 		return ERR_UNAVAILABLE;
 	}
 #endif
@@ -246,7 +245,7 @@ void OS_Haiku::set_clipboard(const String &p_text) {
 String OS_Haiku::get_clipboard() const {
 	if (!be_clipboard->Lock())
 		return "";
-	
+
 	BMessage *clipData = be_clipboard->Data();
 	if (clipData == NULL)
 		return "";
@@ -255,14 +254,32 @@ String OS_Haiku::get_clipboard() const {
 	ssize_t bufferLength;
 	clipData->FindData("text/plain", B_MIME_TYPE,
 		reinterpret_cast<const void**>(&buffer), &bufferLength);
-	
+
 	BString clipStr;
 	clipStr.SetTo(buffer, bufferLength);
-	
+
 	String outStr;
 	outStr.parse_utf8(clipStr.String());
-	
+
 	return outStr;
+}
+
+void OS_Haiku::warp_mouse_position(const Point2 &p_to) {
+
+	if (mouse_mode == MOUSE_MODE_CAPTURED) {
+
+		last_mouse_pos = p_to;
+	} else {
+
+		/*XWindowAttributes xwa;
+		XGetWindowAttributes(x11_display, x11_window, &xwa);
+		printf("%d %d\n", xwa.x, xwa.y); needed? */
+
+		XWarpPointer(x11_display, None, x11_window,
+				0, 0, 0, 0, (int)p_to.x, (int)p_to.y);
+
+		set_mouse_position(
+	}
 }
 
 Point2 OS_Haiku::get_mouse_position() const {
@@ -273,26 +290,12 @@ int OS_Haiku::get_mouse_button_state() const {
 	return window->GetLastButtonMask();
 }
 
-void OS_Haiku::alert(const String &p_alert, const String &p_title) {
-	BAlert *alert = new BAlert(p_title.utf8().get_data(),
-				   p_alert.utf8().get_data(),
-				   "OK", NULL, NULL, B_WIDTH_AS_USUAL,
-				   B_WARNING_ALERT);
-	alert->Go(NULL);
-	delete alert;
-}
-
 void OS_Haiku::set_cursor_shape(CursorShape p_shape) {
 	ERR_FAIL_INDEX(p_shape, CURSOR_MAX);
-	
+
 	if (cursor_shape == p_shape)
 		return;
 
-//	if (mouse_mode != MOUSE_MODE_VISIBLE && mouse_mode != MOUSE_MODE_CONFINED) {
-//		cursor_shape = p_shape;
-//		return;
-//	}
-	
 	static const BCursorID native_cursors[CURSOR_MAX] = {
 		B_CURSOR_ID_SYSTEM_DEFAULT,
 		B_CURSOR_ID_I_BEAM,
@@ -324,6 +327,33 @@ OS::CursorShape OS_Haiku::get_cursor_shape() const {
 
 void OS_Haiku::set_custom_mouse_cursor(const RES &p_cursor, CursorShape p_shape, const Vector2 &p_hotspot) {
 	// TODO
+}
+
+void OS_Haiku::set_mouse_mode(MouseMode p_mode) {
+	if (p_mode == mouse_mode)
+		return;
+
+	// The cursor can not be shy, when the mode is VISIBLE or CONFINED
+	bool showCursor = (p_mode == MOUSE_MODE_VISIBLE ||
+					   p_mode == MOUSE_MODE_CONFINED);
+
+	// The cursor must stay put, it shall never leave the Godot window
+	bool grabCursor = (p_mode == MOUSE_MODE_CAPTURED ||
+					   p_mode == MOUSE_MODE_CONFINED);
+
+	if (showCursor) {
+		be_app->ShowCursor();
+	} else {
+		be_app->HideCursor();
+	}
+
+	window->SetGrabCursorMode(grabCursor);
+
+	mouse_mode = p_mode;
+}
+
+MouseMode OS_Haiku::get_mouse_mode() const {
+	return mouse_mode;
 }
 
 int OS_Haiku::get_screen_count() const {
@@ -379,7 +409,7 @@ void OS_Haiku::set_max_window_size(const Size2 p_size) {
 		ERR_PRINT("Maximum window size can't be smaller than minimum window size!");
 		return;
 	}
-	
+
 	window->SetSizeLimits(min_size.width, p_size.width, min_size.height, p_size.height);
 	max_size = p_size;
 }
@@ -393,7 +423,7 @@ void OS_Haiku::set_min_window_size(const Size2 p_size) {
 		ERR_PRINT("Minimum window size can't be larger than maximum window size!");
 		return;
 	}
-	
+
 	window->SetSizeLimits(p_size.width, max_size.width, p_size.height, max_size.height);
 	min_size = p_size;
 }
@@ -411,7 +441,7 @@ void OS_Haiku::set_window_position(const Point2 &p_position) {
 void OS_Haiku::set_window_fullscreen(bool p_enabled) {
 	window->SetFullScreen(p_enabled);
 	current_video_mode.fullscreen = p_enabled;
-	visual_server->init();
+	//visual_server->init();
 }
 
 bool OS_Haiku::is_window_fullscreen() const {
@@ -457,7 +487,7 @@ void OS_Haiku::set_window_always_on_top(bool p_enabled) {
 
 	status_t result = window->SetFeel(p_enabled ? B_FLOATING_ALL_WINDOW_FEEL :
 						      B_NORMAL_WINDOW_FEEL);
-	
+
 	if (result == B_OK)
 		current_video_mode.always_on_top = p_enabled;
 }
@@ -467,16 +497,16 @@ bool OS_Haiku::is_window_always_on_top() const {
 }
 
 bool OS_Haiku::is_window_focused() const {
-	return window->IsActive();	
+	return window->IsActive();
 }
 
 void OS_Haiku::set_borderless_window(bool p_borderless) {
 	if (current_video_mode.borderless_window == p_borderless)
 		return;
-	
+
 	status_t result = window->SetLook(p_borderless ? B_NO_BORDER_WINDOW_LOOK :
 							 B_DOCUMENT_WINDOW_LOOK);
-	
+
 	if (result == B_OK)
 		current_video_mode.borderless_window = p_borderless;
 }
@@ -486,7 +516,16 @@ bool OS_Haiku::get_borderless_window() {
 }
 
 void OS_Haiku::move_window_to_foreground() {
-	window->Activate();	
+	window->Activate();
+}
+
+void OS_Haiku::alert(const String &p_alert, const String &p_title) {
+	BAlert *alert = new BAlert(p_title.utf8().get_data(),
+							   p_alert.utf8().get_data(),
+							   "OK", NULL, NULL, B_WIDTH_AS_USUAL,
+							   B_WARNING_ALERT);
+	alert->Go();
+	delete alert;
 }
 
 String OS_Haiku::get_locale() const {
@@ -515,7 +554,7 @@ void OS_Haiku::get_fullscreen_mode_list(List<VideoMode> *p_list, int p_screen) c
 }
 
 String OS_Haiku::get_executable_path() const {
-	char pathBuffer[B_PATH_NAME_LENGTH];		
+	char pathBuffer[B_PATH_NAME_LENGTH];
 	image_info info;
 	int32 cookie = 0;
 
@@ -528,7 +567,7 @@ String OS_Haiku::get_executable_path() const {
 			return path;
 		}
 	}
-	
+
 	return OS::get_executable_path();
 }
 
@@ -598,6 +637,7 @@ Error OS_Haiku::move_to_trash(const String &p_path) {
 		return FAILED;
 	}
 
+	// Hurrah!
 	return OK;
 }
 
