@@ -84,6 +84,7 @@ public:
 	virtual void MessageReceived(BMessage *message);
 	virtual void DispatchMessage(BMessage *message, BHandler *handler);
 
+	inline void SetLastMousePosition(Point2i p_last_position) { last_mouse_position = p_last_position; };
 	inline Point2i GetLastMousePosition() { return last_mouse_position; };
 	inline int GetLastButtonMask() { return last_button_mask; };
 };

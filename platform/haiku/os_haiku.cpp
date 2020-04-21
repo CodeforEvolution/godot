@@ -47,6 +47,7 @@
 #include <kernel/fs_info.h>
 #include <LocaleRoster.h>
 #include <Path.h>
+#include <Point.h>
 #include <Screen.h>
 #include <Volume.h>
 
@@ -54,6 +55,10 @@ OS_Haiku::OS_Haiku() {
 #ifdef MEDIA_KIT_ENABLED
 	AudioDriverManager::add_driver(&driver_media_kit);
 #endif
+
+	minimized = false;
+	window_focused = true;
+	mouse_mode = MOUSE_MODE_VISIBLE;
 };
 
 void OS_Haiku::run() {
@@ -67,9 +72,9 @@ void OS_Haiku::run() {
 //	BMessenger *bms = new BMessenger(window);
 //	bms->SendMessage(LOCKGL_MSG);
 
-	window->StartMessageRunner();
+//	window->StartMessageRunner();
 	app->Run();
-	window->StopMessageRunner();
+//	window->StopMessageRunner();
 
 	delete app;
 
@@ -218,7 +223,7 @@ void OS_Haiku::make_rendering_thread() {
 }
 
 bool OS_Haiku::can_draw() const {
-	return !window->IsMinimized();
+	return !minimized;
 }
 
 void OS_Haiku::swap_buffers() {
@@ -267,18 +272,13 @@ String OS_Haiku::get_clipboard() const {
 void OS_Haiku::warp_mouse_position(const Point2 &p_to) {
 
 	if (mouse_mode == MOUSE_MODE_CAPTURED) {
-
-		last_mouse_pos = p_to;
+		window->SetLastMousePosition(p_to);
 	} else {
+		BPoint point;
+		point.Set(p_to.x, p_to.y);
 
-		/*XWindowAttributes xwa;
-		XGetWindowAttributes(x11_display, x11_window, &xwa);
-		printf("%d %d\n", xwa.x, xwa.y); needed? */
-
-		XWarpPointer(x11_display, None, x11_window,
-				0, 0, 0, 0, (int)p_to.x, (int)p_to.y);
-
-		set_mouse_position(
+		window->ConvertToScreen(&point);
+		set_mouse_position(point.x, point.y);
 	}
 }
 
@@ -497,7 +497,7 @@ bool OS_Haiku::is_window_always_on_top() const {
 }
 
 bool OS_Haiku::is_window_focused() const {
-	return window->IsActive();
+	return window_focused;
 }
 
 void OS_Haiku::set_borderless_window(bool p_borderless) {
@@ -526,6 +526,10 @@ void OS_Haiku::alert(const String &p_alert, const String &p_title) {
 							   B_WARNING_ALERT);
 	alert->Go();
 	delete alert;
+}
+
+Error OS_Haiku::shell_open(String p_uri) {
+	return execute("open", p_uri, false);
 }
 
 String OS_Haiku::get_locale() const {
@@ -612,27 +616,27 @@ Error OS_Haiku::move_to_trash(const String &p_path) {
 		return FAILED;
 
 	// Create BVolume representing the volume the path is located on
-	BVolume *trashVol = new BVolume(trashDev);
-	if (trashVol == NULL || trashVol->InitCheck() != B_OK)
+	BVolume trashVol;
+	if (trashVol.SetTo(trashDev) != B_OK)
 		return FAILED;
 
 	// Find trash directory on volume
 	BPath trashPath;
-	if (find_directory(B_TRASH_DIRECTORY, &trashPath, true, trashVol) != B_OK)
+	if (find_directory(B_TRASH_DIRECTORY, &trashPath, true, &trashVol) != B_OK)
 		return FAILED;
 
 	// Create BDirectory representing the trash directory
-	BDirectory *trashDir = new BDirectory(trashPath.Path());
-	if (trashDir == NULL || trashDir->InitCheck() != B_OK)
+	BDirectory trashDir;
+	if (trashDir.SetTo(trashPath.Path()) != B_OK)
 		return FAILED;
 
 	// Create BEntry representing file to move to trash
-	BEntry *fileEntry = new BEntry(p_path.utf8().get_data());
-	if (fileEntry == NULL || fileEntry->InitCheck() != B_OK)
+	BEntry fileEntry;
+	if (fileEntry.SetTo(p_path.utf8().get_data()) != B_OK)
 		return FAILED;
 
 	// Do it now!
-	if (fileEntry->MoveTo(trashDir) != B_OK) {
+	if (fileEntry.MoveTo(trashDir) != B_OK) {
 		// That was anti-climatic...
 		return FAILED;
 	}
