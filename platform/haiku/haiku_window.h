@@ -33,19 +33,14 @@
 
 #include <kernel/image.h> // needed for image_id
 
-#include <DirectWindow.h>
+#include <Window.h>
 
 #include "core/os/os.h"
 #include "main/input_default.h"
 
 #include "haiku_gl_view.h"
 
-#define REDRAW_MSG 'rdrw'
-#define LOCKGL_MSG 'glck'
-#define UNLOCKGL_MSG 'ulck'
-#defome MAKEFOCUS_MSG 'mkfc'
-
-class HaikuDirectWindow : public BDirectWindow {
+class HaikuWindow : public BWindow {
 private:
 	Point2i last_mouse_position;
 	bool last_mouse_pos_valid;
@@ -53,11 +48,11 @@ private:
 	uint32 last_key_modifier_state;
 	int last_button_mask;
 	OS::VideoMode *current_video_mode;
+	bool cursor_grab_mode;
 
 	MainLoop *main_loop;
 	InputDefault *input;
 	HaikuGLView *view;
-	BMessageRunner *update_runner;
 
 	void HandleMouseButton(BMessage *message);
 	void HandleMouseMoved(BMessage *message);
@@ -69,19 +64,15 @@ private:
 	inline int GetMouseButtonState(uint32 p_state);
 
 public:
-	HaikuDirectWindow(BRect p_frame);
-	~HaikuDirectWindow();
+	HaikuWindow(BRect p_frame);
+	~HaikuWindow();
 
 	void SetHaikuGLView(HaikuGLView *p_view);
-	void StartMessageRunner();
-	void StopMessageRunner();
 	void SetInput(InputDefault *p_input);
 	inline void SetGrabCursorMode(bool p_enabled) { cursor_grab_mode = p_enabled; };
 	void SetMainLoop(MainLoop *p_main_loop);
 	inline void SetVideoMode(OS::VideoMode *video_mode) { current_video_mode = video_mode; };
 	virtual bool QuitRequested();
-	virtual void DirectConnected(direct_buffer_info *info);
-	virtual void MessageReceived(BMessage *message);
 	virtual void DispatchMessage(BMessage *message, BHandler *handler);
 
 	inline void SetLastMousePosition(Point2i p_last_position) { last_mouse_position = p_last_position; };

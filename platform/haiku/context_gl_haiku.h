@@ -33,13 +33,13 @@
 
 #if defined(OPENGL_ENABLED)
 
-#include "haiku_direct_window.h"
+#include "haiku_window.h"
 #include "haiku_gl_view.h"
 
 class ContextGL_Haiku {
 private:
 	HaikuGLView *view;
-	HaikuDirectWindow *window;
+	HaikuWindow *window;
 
 	bool use_vsync;
 
@@ -54,9 +54,7 @@ public:
 	void set_use_vsync(bool p_use);
 	bool is_using_vsync() const;
 
-	void make_focus(bool p_focus);
-
-	ContextGL_Haiku(HaikuDirectWindow *p_window);
+	ContextGL_Haiku(HaikuWindow *p_window);
 	~ContextGL_Haiku();
 };
 

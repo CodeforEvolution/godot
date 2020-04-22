@@ -66,19 +66,9 @@ void OS_Haiku::run() {
 		return;
 
 	main_loop->init();
-	//context_gl->make_current();
-
-	// TODO: clean up
-//	BMessenger *bms = new BMessenger(window);
-//	bms->SendMessage(LOCKGL_MSG);
-
-//	window->StartMessageRunner();
 	app->Run();
-//	window->StopMessageRunner();
 
 	delete app;
-
-//	delete bms;
 	main_loop->finish();
 }
 
@@ -108,7 +98,9 @@ Error OS_Haiku::initialize(const VideoMode &p_desired, int p_video_driver, int p
 
 	app = new HaikuApplication();
 
-	window = new HaikuDirectWindow(BRect(0, 0, current_video_mode.width - 1, current_video_mode.height - 1));
+	window = new HaikuWindow(BRect(0, 0, current_video_mode.width - 1, current_video_mode.height - 1));
+	window->CenterOnScreen();
+	window->MoveOnScreen();
 	window->SetVideoMode(&current_video_mode);
 
 	float tempMinWidth;
@@ -121,11 +113,6 @@ Error OS_Haiku::initialize(const VideoMode &p_desired, int p_video_driver, int p
 	min_size = Size2(tempMinWidth, tempMinHeight);
 	max_size = Size2(tempMaxWidth, tempMaxHeight);
 
-	if (current_video_mode.fullscreen) {
-		current_video_mode.fullscreen = false;
-		set_window_fullscreen(true);
-	}
-
 	if (current_video_mode.resizable) {
 		current_video_mode.resizable = false;
 		set_window_resizable(true);
@@ -136,7 +123,13 @@ Error OS_Haiku::initialize(const VideoMode &p_desired, int p_video_driver, int p
 		set_window_always_on_top(true);
 	}
 
-	if (current_video_mode.borderless_window) {
+	if (current_video_mode.maximized) {
+		current_video_mode.maximized = false;
+		set_window_maximized(true);
+	} else if (current_video_mode.fullscreen) {
+		current_video_mode.fullscreen = false;
+		set_window_fullscreen(true);
+	} else if (current_video_mode.borderless_window) {
 		current_video_mode.borderless_window = false;
 		set_borderless_window(true);
 	}
@@ -326,7 +319,7 @@ OS::CursorShape OS_Haiku::get_cursor_shape() const {
 }
 
 void OS_Haiku::set_custom_mouse_cursor(const RES &p_cursor, CursorShape p_shape, const Vector2 &p_hotspot) {
-	// TODO
+	// TODO - Functionality not currently available on Haiku
 }
 
 void OS_Haiku::set_mouse_mode(MouseMode p_mode) {
@@ -352,7 +345,7 @@ void OS_Haiku::set_mouse_mode(MouseMode p_mode) {
 	mouse_mode = p_mode;
 }
 
-MouseMode OS_Haiku::get_mouse_mode() const {
+OS::MouseMode OS_Haiku::get_mouse_mode() const {
 	return mouse_mode;
 }
 
@@ -396,7 +389,6 @@ Size2 OS_Haiku::get_window_size() const {
 }
 
 void OS_Haiku::set_window_size(const Size2 p_size) {
-	// TODO: why does it stop redrawing after this is called?
 	window->ResizeTo(p_size.x, p_size.y);
 }
 
@@ -439,9 +431,8 @@ void OS_Haiku::set_window_position(const Point2 &p_position) {
 }
 
 void OS_Haiku::set_window_fullscreen(bool p_enabled) {
-	window->SetFullScreen(p_enabled);
+	//window->SetFullScreen(p_enabled); Urghhh...I miss BDirectWindow...
 	current_video_mode.fullscreen = p_enabled;
-	//visual_server->init();
 }
 
 bool OS_Haiku::is_window_fullscreen() const {
@@ -449,6 +440,9 @@ bool OS_Haiku::is_window_fullscreen() const {
 }
 
 void OS_Haiku::set_window_resizable(bool p_enabled) {
+	if (current_video_mode.resizable == p_enabled)
+		return;
+
 	uint32 flags = window->Flags();
 
 	if (p_enabled) {
@@ -466,19 +460,28 @@ bool OS_Haiku::is_window_resizable() const {
 }
 
 void OS_Haiku::set_window_minimized(bool p_enabled) {
+	if (minimized == p_enabled)
+		return;
+
 	window->Minimize(p_enabled);
 }
 
 bool OS_Haiku::is_window_minimized() const {
-	return window->IsMinimized();
+	return minimized;
 }
 
 void OS_Haiku::set_window_maximized(bool p_enabled) {
-	window->Minimize(!p_enabled);
+	if (current_video_mode.maximized == p_enabled)
+		return;
+
+	// This is kind of weird...we just have to assume that this will maximize
+	// and unmaximize the window when the time comes around...We could manually
+	// handle a Zoom() call if wanted however.
+	window->Zoom();
 }
 
 bool OS_Haiku::is_window_maximized() const {
-	return !window->IsMinimized();
+	return current_video_mode.maximized;
 }
 
 void OS_Haiku::set_window_always_on_top(bool p_enabled) {
@@ -486,7 +489,7 @@ void OS_Haiku::set_window_always_on_top(bool p_enabled) {
 		return;
 
 	status_t result = window->SetFeel(p_enabled ? B_FLOATING_ALL_WINDOW_FEEL :
-						      B_NORMAL_WINDOW_FEEL);
+		B_NORMAL_WINDOW_FEEL);
 
 	if (result == B_OK)
 		current_video_mode.always_on_top = p_enabled;
@@ -505,7 +508,7 @@ void OS_Haiku::set_borderless_window(bool p_borderless) {
 		return;
 
 	status_t result = window->SetLook(p_borderless ? B_NO_BORDER_WINDOW_LOOK :
-							 B_DOCUMENT_WINDOW_LOOK);
+		B_DOCUMENT_WINDOW_LOOK);
 
 	if (result == B_OK)
 		current_video_mode.borderless_window = p_borderless;
@@ -529,7 +532,9 @@ void OS_Haiku::alert(const String &p_alert, const String &p_title) {
 }
 
 Error OS_Haiku::shell_open(String p_uri) {
-	return execute("open", p_uri, false);
+	List<String> args;
+	args.push_back(p_uri);
+	return execute("open", args, false);
 }
 
 String OS_Haiku::get_locale() const {
@@ -636,7 +641,7 @@ Error OS_Haiku::move_to_trash(const String &p_path) {
 		return FAILED;
 
 	// Do it now!
-	if (fileEntry.MoveTo(trashDir) != B_OK) {
+	if (fileEntry.MoveTo(&trashDir) != B_OK) {
 		// That was anti-climatic...
 		return FAILED;
 	}

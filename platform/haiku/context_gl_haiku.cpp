@@ -32,7 +32,7 @@
 
 #if defined(OPENGL_ENABLED)
 
-ContextGL_Haiku::ContextGL_Haiku(HaikuDirectWindow *p_window) {
+ContextGL_Haiku::ContextGL_Haiku(HaikuWindow *p_window) {
 	window = p_window;
 
 	uint32 type = BGL_RGB | BGL_DOUBLE | BGL_DEPTH;
@@ -42,7 +42,6 @@ ContextGL_Haiku::ContextGL_Haiku(HaikuDirectWindow *p_window) {
 }
 
 ContextGL_Haiku::~ContextGL_Haiku() {
-	delete view;
 }
 
 Error ContextGL_Haiku::initialize() {
@@ -78,10 +77,6 @@ void ContextGL_Haiku::set_use_vsync(bool p_use) {
 
 bool ContextGL_Haiku::is_using_vsync() const {
 	return use_vsync;
-}
-
-void ContextGL_Haiku::make_focus(bool p_focus) {
-	view->MakeFocus(p_focus);
 }
 
 #endif

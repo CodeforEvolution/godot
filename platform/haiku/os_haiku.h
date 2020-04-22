@@ -35,7 +35,7 @@
 #include "context_gl_haiku.h"
 #include "drivers/unix/os_unix.h"
 #include "haiku_application.h"
-#include "haiku_direct_window.h"
+#include "haiku_window.h"
 #include "main/input_default.h"
 #include "servers/audio_server.h"
 #include "servers/visual_server.h"
@@ -43,7 +43,7 @@
 class OS_Haiku : public OS_Unix {
 private:
 	HaikuApplication *app;
-	HaikuDirectWindow *window;
+	HaikuWindow *window;
 	MainLoop *main_loop;
 	InputDefault *input;
 	VisualServer *visual_server;
@@ -55,6 +55,7 @@ private:
 	Size2 min_size;
 	Size2 max_size;
 	bool minimized;
+	bool window_focused;
 
 #ifdef MEDIA_KIT_ENABLED
 	AudioDriverMediaKit driver_media_kit;
@@ -99,8 +100,8 @@ public:
 	virtual void set_cursor_shape(CursorShape p_shape);
 	virtual CursorShape get_cursor_shape() const;
 	virtual void set_custom_mouse_cursor(const RES &p_cursor, CursorShape p_shape, const Vector2 &p_hotspot);
-	//void set_mouse_mode(MouseMode p_mode); // Implement
-	//MouseMode get_mouse_mode() const; // Implement
+	void set_mouse_mode(MouseMode p_mode); // WIP
+	MouseMode get_mouse_mode() const; // WIP
 
 	virtual int get_screen_count() const;
 	virtual int get_current_screen() const;
@@ -133,17 +134,12 @@ public:
 	virtual void move_window_to_foreground();
 
 	virtual void alert(const String &p_alert, const String &p_title = "GODOT ALERT!");
-	//virtual Error shell_open(String p_uri); // Implement
+	virtual Error shell_open(String p_uri);
 	String get_locale() const;
 
 	virtual void set_video_mode(const VideoMode &p_video_mode, int p_screen = 0);
 	virtual VideoMode get_video_mode(int p_screen = 0) const;
 	virtual void get_fullscreen_mode_list(List<VideoMode> *p_list, int p_screen = 0) const;
-
-	//virtual void set_ime_active(const bool p_active); // Implement
-	//virtual void set_ime_position(const Point2 &p_pos); // Implement
-	//virtual Point2 get_ime_selection() const; // Implement
-	//virtual String get_ime_text() const; // Implement
 
 	virtual OS::PowerState get_power_state();
 	virtual int get_power_seconds_left();

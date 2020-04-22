@@ -31,73 +31,45 @@
 #include <UnicodeChar.h>
 
 #include "core/os/keyboard.h"
-#include "haiku_direct_window.h"
+#include "haiku_window.h"
 #include "key_mapping_haiku.h"
 #include "main/main.h"
 
-HaikuDirectWindow::HaikuDirectWindow(BRect p_frame) :
-		BDirectWindow(p_frame, "Godot", B_TITLED_WINDOW, B_QUIT_ON_WINDOW_CLOSE) {
+HaikuWindow::HaikuWindow(BRect p_frame)
+	:
+	BWindow(p_frame, "Godot", B_TITLED_WINDOW, B_QUIT_ON_WINDOW_CLOSE) {
 	last_mouse_pos_valid = false;
 	last_buttons_state = 0;
 	last_button_mask = 0;
 	last_key_modifier_state = 0;
+	cursor_grab_mode = false;
 
 	view = NULL;
-	update_runner = NULL;
 	input = NULL;
 	main_loop = NULL;
 }
 
-HaikuDirectWindow::~HaikuDirectWindow() {
+HaikuWindow::~HaikuWindow() {
 }
 
-void HaikuDirectWindow::SetHaikuGLView(HaikuGLView *p_view) {
+void HaikuWindow::SetHaikuGLView(HaikuGLView *p_view) {
 	view = p_view;
 }
 
-void HaikuDirectWindow::StartMessageRunner() {
-	update_runner = new BMessageRunner(BMessenger(this),
-			new BMessage(REDRAW_MSG), 1000000 / 60 /* 60 fps */);
-}
-
-void HaikuDirectWindow::StopMessageRunner() {
-	delete update_runner;
-}
-
-void HaikuDirectWindow::SetInput(InputDefault *p_input) {
+void HaikuWindow::SetInput(InputDefault *p_input) {
 	input = p_input;
 }
 
-void HaikuDirectWindow::SetMainLoop(MainLoop *p_main_loop) {
+void HaikuWindow::SetMainLoop(MainLoop *p_main_loop) {
 	main_loop = p_main_loop;
 }
 
-bool HaikuDirectWindow::QuitRequested() {
-	StopMessageRunner();
+bool HaikuWindow::QuitRequested() {
 	main_loop->notification(MainLoop::NOTIFICATION_WM_QUIT_REQUEST);
 	return false;
 }
 
-void HaikuDirectWindow::DirectConnected(direct_buffer_info *info) {
-	view->DirectConnected(info);
-	view->EnableDirectMode(true);
-}
-
-void HaikuDirectWindow::MessageReceived(BMessage *message) {
-	switch (message->what) {
-		case REDRAW_MSG:
-			if (Main::iteration()) {
-				view->EnableDirectMode(false);
-				Quit();
-			}
-			break;
-
-		default:
-			BDirectWindow::MessageReceived(message);
-	}
-}
-
-void HaikuDirectWindow::DispatchMessage(BMessage *message, BHandler *handler) {
+void HaikuWindow::DispatchMessage(BMessage *message, BHandler *handler) {
 	switch (message->what) {
 		case B_MOUSE_DOWN:
 		case B_MOUSE_UP:
@@ -125,27 +97,12 @@ void HaikuDirectWindow::DispatchMessage(BMessage *message, BHandler *handler) {
 			HandleWindowResized(message);
 			break;
 
-		case LOCKGL_MSG:
-			view->LockGL();
-			break;
-
-		case UNLOCKGL_MSG:
-			view->UnlockGL();
-			break;
-
-		case MAKEFOCUS_MSG: {
-			bool focus;
-			if (message->FindBool("focus", &focus) == B_OK) {
-				view->MakeFocus(focus);
-			}
-		} 	break;
-
 		default:
-			BDirectWindow::DispatchMessage(message, handler);
+			BWindow::DispatchMessage(message, handler);
 	}
 }
 
-void HaikuDirectWindow::HandleMouseButton(BMessage *message) {
+void HaikuWindow::HandleMouseButton(BMessage *message) {
 	BPoint where;
 	if (message->FindPoint("where", &where) != B_OK) {
 		return;
@@ -200,7 +157,7 @@ void HaikuDirectWindow::HandleMouseButton(BMessage *message) {
 	input->parse_input_event(mouse_event);
 }
 
-void HaikuDirectWindow::HandleMouseMoved(BMessage *message) {
+void HaikuWindow::HandleMouseMoved(BMessage *message) {
 	BPoint where;
 	if (message->FindPoint("where", &where) != B_OK) {
 		return;
@@ -235,7 +192,7 @@ void HaikuDirectWindow::HandleMouseMoved(BMessage *message) {
 	input->parse_input_event(motion_event);
 }
 
-void HaikuDirectWindow::HandleMouseWheelChanged(BMessage *message) {
+void HaikuWindow::HandleMouseWheelChanged(BMessage *message) {
 	float wheel_delta_y = 0;
 	if (message->FindFloat("be:wheel_delta_y", &wheel_delta_y) != B_OK) {
 		return;
@@ -259,7 +216,7 @@ void HaikuDirectWindow::HandleMouseWheelChanged(BMessage *message) {
 	input->parse_input_event(mouse_event);
 }
 
-void HaikuDirectWindow::HandleKeyboardEvent(BMessage *message) {
+void HaikuWindow::HandleKeyboardEvent(BMessage *message) {
 	int32 raw_char = 0;
 	int32 key = 0;
 	int32 modifiers = 0;
@@ -298,7 +255,7 @@ void HaikuDirectWindow::HandleKeyboardEvent(BMessage *message) {
 	input->parse_input_event(event);
 }
 
-void HaikuDirectWindow::HandleKeyboardModifierEvent(BMessage *message) {
+void HaikuWindow::HandleKeyboardModifierEvent(BMessage *message) {
 	int32 old_modifiers = 0;
 	int32 modifiers = 0;
 
@@ -324,11 +281,12 @@ void HaikuDirectWindow::HandleKeyboardModifierEvent(BMessage *message) {
 	input->parse_input_event(event);
 }
 
-void HaikuDirectWindow::HandleWindowResized(BMessage *message) {
+void HaikuWindow::HandleWindowResized(BMessage *message) {
 	int32 width = 0;
 	int32 height = 0;
 
-	if ((message->FindInt32("width", &width) != B_OK) || (message->FindInt32("height", &height) != B_OK)) {
+	if ((message->FindInt32("width", &width) != B_OK) ||
+		(message->FindInt32("height", &height) != B_OK)) {
 		return;
 	}
 
@@ -336,7 +294,7 @@ void HaikuDirectWindow::HandleWindowResized(BMessage *message) {
 	current_video_mode->height = height;
 }
 
-inline void HaikuDirectWindow::GetKeyModifierState(Ref<InputEventWithModifiers> event, uint32 p_state) {
+inline void HaikuWindow::GetKeyModifierState(Ref<InputEventWithModifiers> event, uint32 p_state) {
 	last_key_modifier_state = p_state;
 
 	event->set_shift(p_state & B_SHIFT_KEY);
@@ -345,7 +303,7 @@ inline void HaikuDirectWindow::GetKeyModifierState(Ref<InputEventWithModifiers> 
 	event->set_metakey(p_state & B_COMMAND_KEY);
 }
 
-inline int HaikuDirectWindow::GetMouseButtonState(uint32 p_state) {
+inline int HaikuWindow::GetMouseButtonState(uint32 p_state) {
 	int state = 0;
 
 	if (p_state & B_PRIMARY_MOUSE_BUTTON) {
