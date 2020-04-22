@@ -36,11 +36,12 @@ HaikuGLView::HaikuGLView(BRect frame, uint32 type)
 	BGLView(frame, "GodotGLView", B_FOLLOW_ALL_SIDES, 0, type) {
 }
 
-void HaikuGLView::AttachedToWindow(void) {
+void HaikuGLView::AttachedToWindow() {
 	BGLView::AttachedToWindow();
 	MakeFocus();
 }
 
 void HaikuGLView::Draw(BRect updateRect) {
 	Main::force_redraw();
+	BGLView::Draw(updateRect);
 }
