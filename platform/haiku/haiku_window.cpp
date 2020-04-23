@@ -125,8 +125,8 @@ void HaikuWindow::HandleMouseButton(BMessage *message) {
 	mouse_event.instance();
 
 	mouse_event->set_button_mask(GetMouseButtonState(buttons));
-	mouse_event->set_position({ where.x, where.y });
-	mouse_event->set_global_position({ where.x, where.y });
+	mouse_event->set_position(Vector2(where.x, where.y));
+	mouse_event->set_global_position(Vector2(where.x, where.y));
 	GetKeyModifierState(mouse_event, modifiers);
 
 	switch (button) {
@@ -148,10 +148,8 @@ void HaikuWindow::HandleMouseButton(BMessage *message) {
 
 	if (message->what == B_MOUSE_DOWN && mouse_event->get_button_index() == BUTTON_LEFT) {
 		int32 clicks = message->FindInt32("clicks");
-
-		if (clicks > 1) {
+		if (clicks > 1)
 			mouse_event->set_doubleclick(true);
-		}
 	}
 
 	input->parse_input_event(mouse_event);
@@ -159,8 +157,14 @@ void HaikuWindow::HandleMouseButton(BMessage *message) {
 
 void HaikuWindow::HandleMouseMoved(BMessage *message) {
 	BPoint where;
-	if (message->FindPoint("where", &where) != B_OK) {
-		return;
+	// Is it tablet time?
+	if ((message->FindFloat("be:tablet_x", &where.x) != B_OK
+	     || message->FindFloat("be:tablet_y", &where.y) != B_OK) {
+		// No...Is it mouse time?
+		if (message->FindPoint("where", &where) != B_OK) {
+			// Oh no...it seems there is no time...
+			return;
+		}
 	}
 
 	Point2i pos(where.x, where.y);
@@ -176,44 +180,71 @@ void HaikuWindow::HandleMouseMoved(BMessage *message) {
 
 	Ref<InputEventMouseMotion> motion_event;
 	motion_event.instance();
+
 	GetKeyModifierState(motion_event, modifiers);
 
 	motion_event->set_button_mask(GetMouseButtonState(buttons));
-	motion_event->set_position({ pos.x, pos.y });
+	motion_event->set_position(Vector2(pos.x, pos.y));
 	input->set_mouse_position(pos);
-	motion_event->set_global_position({ pos.x, pos.y });
-	motion_event->set_speed({ input->get_last_mouse_speed().x,
-			input->get_last_mouse_speed().y });
 
-	motion_event->set_relative({ rel.x, rel.y });
+	motion_event->set_global_position(Vector2(pos.x, pos.y));
+	motion_event->set_speed(Vector2(input->get_last_mouse_speed().x,
+			input->get_last_mouse_speed().y));
+	motion_event->set_relative(Vector2(rel.x, rel.y));
 
 	last_mouse_position = pos;
+	
+	 // Add some scrumptious tablet info if available
+	float under_pressure;
+	if (message->FindFloat("be:tablet_pressure", &under_pressure) == B_OK)
+		motion_event->set_pressure(under_pressure);
+	
+	float tiltX, tiltY;
+	if (message->FindFloat("be:tablet_tilt_x", &tiltX) == B_OK
+	    && message->FindFloat("be:tablet_tilt_y", &tiltY) == B_OK)
+		motion_event->set_tilt(Vector2(tiltX, tiltY));
 
 	input->parse_input_event(motion_event);
 }
 
 void HaikuWindow::HandleMouseWheelChanged(BMessage *message) {
+	Ref<InputEventMouseButton> scroll_event;
+	scroll_event.instance();
+
+	// Testing this line...was commented out before...
+	GetKeyModifierState(scroll_event, modifiers);
+
+	scroll_event->set_button_mask(last_button_mask);
+	scroll_event->set_position(Vector2(last_mouse_position.x,
+			last_mouse_position.y));
+	scroll_event->set_global_position(Vector2(last_mouse_position.x,
+			last_mouse_position.y));
+
+	// Vertical scrolling...
 	float wheel_delta_y = 0;
-	if (message->FindFloat("be:wheel_delta_y", &wheel_delta_y) != B_OK) {
-		return;
+	if (message->FindFloat("be:wheel_delta_y", &wheel_delta_y) == B_OK) {
+		scroll_event->set_button_index(wheel_delta_y > 0 ? BUTTON_WHEEL_UP : BUTTON_WHEEL_DOWN);
+		scroll_event->set_factor(wheel_delta_y);
+		
+		scroll_event->set_pressed(true);
+		input->parse_input_event(scroll_event);
+
+		scroll_event->set_pressed(false);
+		input->parse_input_event(scroll_event);
 	}
 
-	Ref<InputEventMouseButton> mouse_event;
-	mouse_event.instance();
-	//GetKeyModifierState(mouse_event, modifiers);
+	// and horizontal scrolling! Is this the 21st century or what???
+	float wheel_delta_x = 0;
+	if (message->FindFloat("be:wheel_delta_x", &wheel_delta_x) == B_OK) {
+		scroll_event->set_button_index(wheel_delta_x > 0 ? BUTTON_WHEEL_RIGHT : BUTTON_WHEEL_LEFT);
+		scroll_event->set_factor(wheel_delta_x);
+		
+		scroll_event->set_pressed(true);
+		input->parse_input_event(scroll_event);
 
-	mouse_event->set_button_index(wheel_delta_y < 0 ? BUTTON_WHEEL_UP : BUTTON_WHEEL_DOWN);
-	mouse_event->set_button_mask(last_button_mask);
-	mouse_event->set_position({ last_mouse_position.x,
-			last_mouse_position.y });
-	mouse_event->set_global_position({ last_mouse_position.x,
-			last_mouse_position.y });
-
-	mouse_event->set_pressed(true);
-	input->parse_input_event(mouse_event);
-
-	mouse_event->set_pressed(false);
-	input->parse_input_event(mouse_event);
+		scroll_event->set_pressed(false);
+		input->parse_input_event(scroll_event);
+	}
 }
 
 void HaikuWindow::HandleKeyboardEvent(BMessage *message) {
@@ -221,17 +252,14 @@ void HaikuWindow::HandleKeyboardEvent(BMessage *message) {
 	int32 key = 0;
 	int32 modifiers = 0;
 
-	if (message->FindInt32("raw_char", &raw_char) != B_OK) {
+	if (message->FindInt32("raw_char", &raw_char) != B_OK)
 		return;
-	}
 
-	if (message->FindInt32("key", &key) != B_OK) {
+	if (message->FindInt32("key", &key) != B_OK)
 		return;
-	}
 
-	if (message->FindInt32("modifiers", &modifiers) != B_OK) {
+	if (message->FindInt32("modifiers", &modifiers) != B_OK)
 		return;
-	}
 
 	Ref<InputEventKey> event;
 	event.instance();
