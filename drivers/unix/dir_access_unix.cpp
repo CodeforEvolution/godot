@@ -314,6 +314,14 @@ Error DirAccessUnix::make_dir(String p_dir) {
 	if (err == EEXIST) {
 		return ERR_ALREADY_EXISTS;
 	};
+	
+#if defined(__HAIKU__)
+	// Haiku has special directories which are read-only, though contain
+	// directories that are writable.
+	if (err == EROFS) {
+		return ERR_SKIP;
+	};
+#endif
 
 	return ERR_CANT_CREATE;
 }

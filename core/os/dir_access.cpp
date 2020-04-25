@@ -180,7 +180,7 @@ Error DirAccess::make_dir_recursive(String p_dir) {
 
 		curpath = curpath.plus_file(subdirs[i]);
 		Error err = make_dir(curpath);
-		if (err != OK && err != ERR_ALREADY_EXISTS) {
+		if (err != OK && err != ERR_ALREADY_EXISTS && err != ERR_SKIP) {
 
 			ERR_FAIL_V(err);
 		}
