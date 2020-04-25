@@ -158,8 +158,8 @@ void HaikuWindow::HandleMouseButton(BMessage *message) {
 void HaikuWindow::HandleMouseMoved(BMessage *message) {
 	BPoint where;
 	// Is it tablet time?
-	if ((message->FindFloat("be:tablet_x", &where.x) != B_OK
-	     || message->FindFloat("be:tablet_y", &where.y) != B_OK) {
+	if ((message->FindFloat("be:tablet_x", &where.x) != B_OK)
+	     || (message->FindFloat("be:tablet_y", &where.y) != B_OK)) {
 		// No...Is it mouse time?
 		if (message->FindPoint("where", &where) != B_OK) {
 			// Oh no...it seems there is no time...
@@ -193,12 +193,12 @@ void HaikuWindow::HandleMouseMoved(BMessage *message) {
 	motion_event->set_relative(Vector2(rel.x, rel.y));
 
 	last_mouse_position = pos;
-	
+
 	 // Add some scrumptious tablet info if available
 	float under_pressure;
 	if (message->FindFloat("be:tablet_pressure", &under_pressure) == B_OK)
 		motion_event->set_pressure(under_pressure);
-	
+
 	float tiltX, tiltY;
 	if (message->FindFloat("be:tablet_tilt_x", &tiltX) == B_OK
 	    && message->FindFloat("be:tablet_tilt_y", &tiltY) == B_OK)
@@ -211,8 +211,9 @@ void HaikuWindow::HandleMouseWheelChanged(BMessage *message) {
 	Ref<InputEventMouseButton> scroll_event;
 	scroll_event.instance();
 
-	// Testing this line...was commented out before...
-	GetKeyModifierState(scroll_event, modifiers);
+	key_info info;
+	if (get_key_info(&info) == B_OK)
+		GetKeyModifierState(scroll_event, info.modifiers);
 
 	scroll_event->set_button_mask(last_button_mask);
 	scroll_event->set_position(Vector2(last_mouse_position.x,
@@ -225,7 +226,7 @@ void HaikuWindow::HandleMouseWheelChanged(BMessage *message) {
 	if (message->FindFloat("be:wheel_delta_y", &wheel_delta_y) == B_OK) {
 		scroll_event->set_button_index(wheel_delta_y > 0 ? BUTTON_WHEEL_UP : BUTTON_WHEEL_DOWN);
 		scroll_event->set_factor(wheel_delta_y);
-		
+
 		scroll_event->set_pressed(true);
 		input->parse_input_event(scroll_event);
 
@@ -238,7 +239,7 @@ void HaikuWindow::HandleMouseWheelChanged(BMessage *message) {
 	if (message->FindFloat("be:wheel_delta_x", &wheel_delta_x) == B_OK) {
 		scroll_event->set_button_index(wheel_delta_x > 0 ? BUTTON_WHEEL_RIGHT : BUTTON_WHEEL_LEFT);
 		scroll_event->set_factor(wheel_delta_x);
-		
+
 		scroll_event->set_pressed(true);
 		input->parse_input_event(scroll_event);
 
