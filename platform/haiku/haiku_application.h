@@ -37,7 +37,9 @@
 
 class HaikuApplication : public BApplication {
 public:
-	HaikuApplication();
+			HaikuApplication();
+	
+	virtual void 	AboutRequested();
 };
 
 #endif
