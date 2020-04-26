@@ -30,6 +30,12 @@
 
 #include "haiku_application.h"
 
-HaikuApplication::HaikuApplication() :
-		BApplication("application/x-vnd.godot") {
+HaikuApplication::HaikuApplication()
+	:
+	BApplication("application/x-vnd.godot")
+{
+}
+
+void HaikuApplication::AboutRequested() {
+	OS::get_singleton()->get_main_loop()->notification(NOTIFICATION_WM_ABOUT);
 }
