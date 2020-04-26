@@ -96,6 +96,10 @@ void HaikuWindow::DispatchMessage(BMessage *message, BHandler *handler) {
 		case B_WINDOW_RESIZED:
 			HandleWindowResized(message);
 			break;
+			
+		case B_WINDOW_ACTIVATED:
+			HandleWindowActivated(message);
+			break;
 
 		default:
 			BWindow::DispatchMessage(message, handler);
@@ -321,6 +325,16 @@ void HaikuWindow::HandleWindowResized(BMessage *message) {
 
 	current_video_mode->width = width;
 	current_video_mode->height = height;
+}
+
+void HaikuWindow::HandleWindowActivated(BMessage *message) {
+	bool active = false;
+	
+	if (message->FindBool("active", &active) != B_OK)
+		return;
+	
+	OS::get_singleton()->get_main_loop()->notification(active ? 
+			MainLoop::NOTIFICATION_WM_FOCUS_IN : MainLoop::NOTIFICATION_WM_FOCUS_OUT);
 }
 
 inline void HaikuWindow::GetKeyModifierState(Ref<InputEventWithModifiers> event, uint32 p_state) {
