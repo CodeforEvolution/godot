@@ -57,6 +57,7 @@ private:
 	void HandleMouseButton(BMessage *message);
 	void HandleMouseMoved(BMessage *message);
 	void HandleMouseWheelChanged(BMessage *message);
+	void HandleWindowActivated(BMessage *message);
 	void HandleWindowResized(BMessage *message);
 	void HandleKeyboardEvent(BMessage *message);
 	void HandleKeyboardModifierEvent(BMessage *message);
