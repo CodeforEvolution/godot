@@ -28,6 +28,8 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
+#include <Entry.h>
+#include <Path.h>
 #include <UnicodeChar.h>
 
 #include "core/os/keyboard.h"
@@ -99,6 +101,10 @@ void HaikuWindow::DispatchMessage(BMessage *message, BHandler *handler) {
 			
 		case B_WINDOW_ACTIVATED:
 			HandleWindowActivated(message);
+			break;
+			
+		case B_SIMPLE_DATA:
+			HandleDragData(message);
 			break;
 
 		default:
@@ -346,6 +352,27 @@ void HaikuWindow::HandleWindowActivated(BMessage *message) {
 	
 	OS::get_singleton()->get_main_loop()->notification(active ? 
 			MainLoop::NOTIFICATION_WM_FOCUS_IN : MainLoop::NOTIFICATION_WM_FOCUS_OUT);
+}
+
+void HaikuWindow::HandleDragData(BMessage *message) {
+	BPath path;
+	BEntry entry;
+	entry_ref ref;
+	int32 index = 0;
+	
+	Vector<String> files;
+	while (message->FindRef("refs", index++, &ref) == B_OK) {
+		if (entry.SetTo(&ref) != B_OK ||
+			entry.GetPath(&path) != B_OK) {
+			continue;
+		}
+		
+		String file = path.Path();
+		files.push_back(file);
+	}
+	
+	if (files.size())
+		OS::get_singleton()->get_main_loop()->drop_files(files, 0);
 }
 
 inline void HaikuWindow::GetKeyModifierState(Ref<InputEventWithModifiers> event, uint32 p_state) {
