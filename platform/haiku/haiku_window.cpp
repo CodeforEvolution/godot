@@ -160,6 +160,17 @@ void HaikuWindow::HandleMouseButton(BMessage *message) {
 }
 
 void HaikuWindow::HandleMouseMoved(BMessage *message) {
+	uint32 transit;
+	if (message->FindInt32("be:transit", &transit) == B_OK) {
+		if (transit == B_ENTERED_VIEW) {
+			OS::get_singleton()->get_main_loop()->notification(
+				MainLoop::NOTIFICATION_WM_MOUSE_ENTER);
+		} else if (transit == B_EXITED_VIEW) {
+			OS::get_singleton()->get_main_loop()->notification(	
+				MainLoop::NOTIFICATION_WM_MOUSE_EXIT);
+		}
+	}
+	
 	BPoint where;
 	// Is it tablet time?
 	if ((message->FindFloat("be:tablet_x", &where.x) != B_OK)
