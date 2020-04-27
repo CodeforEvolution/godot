@@ -37,5 +37,5 @@ HaikuApplication::HaikuApplication()
 }
 
 void HaikuApplication::AboutRequested() {
-	OS::get_singleton()->get_main_loop()->notification(NOTIFICATION_WM_ABOUT);
+	OS::get_singleton()->get_main_loop()->notification(MainLoop::NOTIFICATION_WM_ABOUT);
 }
