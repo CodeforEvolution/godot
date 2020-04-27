@@ -61,6 +61,7 @@ private:
 	void HandleWindowResized(BMessage *message);
 	void HandleKeyboardEvent(BMessage *message);
 	void HandleKeyboardModifierEvent(BMessage *message);
+	void HandleDragData(BMessage *message);
 	inline void GetKeyModifierState(Ref<InputEventWithModifiers> event, uint32 p_state);
 	inline int GetMouseButtonState(uint32 p_state);
 
