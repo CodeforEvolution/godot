@@ -38,9 +38,13 @@
 
 #include <stdio.h>
 
+#include <MidiLocalConsumer.h>
+
 class MIDIDriverMIDI2Kit : public MIDIDriver {
-	BMidiLocalConsumer *input_consumer;
+
 	Vector<int32> connected_sources;
+
+	BMidiLocalConsumer *input_consumer;
 
 public:
 	virtual Error open();
