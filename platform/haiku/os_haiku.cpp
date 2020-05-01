@@ -172,6 +172,10 @@ Error OS_Haiku::initialize(const VideoMode &p_desired, int p_video_driver, int p
 }
 
 void OS_Haiku::finalize() {
+#ifdef MIDI2_KIT_ENABLED
+	midi_driver.close();
+#endif
+
 	if (main_loop) {
 		memdelete(main_loop);
 	}
