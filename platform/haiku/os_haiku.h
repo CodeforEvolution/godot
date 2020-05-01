@@ -37,6 +37,7 @@
 #include "haiku_application.h"
 #include "haiku_window.h"
 #include "main/input_default.h"
+#include "midi_driver_midi2_kit.h"
 #include "servers/audio_server.h"
 #include "servers/visual_server.h"
 
@@ -59,6 +60,10 @@ private:
 
 #ifdef MEDIA_KIT_ENABLED
 	AudioDriverMediaKit driver_media_kit;
+#endif
+	
+#ifdef MIDI2_KIT_ENABLED
+	MIDIDriverMIDI2Kit midi_driver;
 #endif
 
 #if defined(OPENGL_ENABLED)
