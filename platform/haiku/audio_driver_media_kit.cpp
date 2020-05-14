@@ -57,7 +57,7 @@ Error AudioDriverMediaKit::init() {
 
 	player = new BSoundPlayer(
 			&format,
-			"godot_sound_server",
+			"Godot",
 			AudioDriverMediaKit::PlayBuffer,
 			NULL,
 			this);

@@ -75,7 +75,8 @@ public:
 	void SetMainLoop(MainLoop *p_main_loop);
 	inline void SetVideoMode(OS::VideoMode *video_mode) { current_video_mode = video_mode; };
 	virtual bool QuitRequested();
-	virtual void DispatchMessage(BMessage *message, BHandler *handler);
+	//virtual void DispatchMessage(BMessage *message, BHandler *handler);
+	virtual void MessageReceived(BMessage *message);
 
 	inline void SetLastMousePosition(Point2i p_last_position) { last_mouse_position = p_last_position; };
 	inline Point2i GetLastMousePosition() { return last_mouse_position; };

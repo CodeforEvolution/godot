@@ -55,13 +55,12 @@ private:
 	MouseMode mouse_mode;
 	Size2 min_size;
 	Size2 max_size;
-	bool minimized;
 	bool window_focused;
 
 #ifdef MEDIA_KIT_ENABLED
 	AudioDriverMediaKit driver_media_kit;
 #endif
-	
+
 #ifdef MIDI2_KIT_ENABLED
 	MIDIDriverMIDI2Kit midi_driver;
 #endif

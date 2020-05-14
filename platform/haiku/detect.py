@@ -1,6 +1,7 @@
 import os
 import platform
 import sys
+from methods import get_compiler_version, using_gcc, using_clang
 
 
 def is_active():
@@ -13,17 +14,24 @@ def get_name():
 
 def can_build():
 
-    if os.name != "posix" or sys.platform == "darwin":
-        return False
+    if (sys.platform.startswith('haiku')):
+        return True
 
-    return True
+    return False
 
 
 def get_opts():
-    from SCons.Variables import EnumVariable
+    from SCons.Variables import BoolVariable, EnumVariable
 
     return [
-        EnumVariable("debug_symbols", "Add debugging symbols to release builds", "yes", ("yes", "no", "full")),
+        BoolVariable('use_lto', 'Use link time optimization (LTO)', False),
+        BoolVariable('use_static_cpp', 'Link libgcc and libstdc++ statically for better portability', False),
+        BoolVariable('use_ubsan', 'Use GCC compiler undefined behavior sanitizer (UBSAN)', False),
+        BoolVariable('use_asan', 'Use GCC compiler address sanitizer (ASAN))', False),
+        BoolVariable('use_lsan', 'Use GCC compiler leak sanitizer (LSAN))', False),
+        BoolVariable('use_tsan', 'Use GCC compiler thread sanitizer (TSAN))', False),
+        EnumVariable('debug_symbols', 'Add debugging symbols to release builds', 'yes', ('yes', 'no', 'full')),
+        BoolVariable('separate_debug_symbols', 'Create a separate file containing debugging symbols', False),
     ]
 
 
@@ -36,22 +44,32 @@ def configure(env):
 
     ## Build type
 
-    if env["target"] == "release":
-        env.Prepend(CCFLAGS=["-O3"])
-        if env["debug_symbols"] == "yes":
-            env.Prepend(CCFLAGS=["-g1"])
-        if env["debug_symbols"] == "full":
-            env.Prepend(CCFLAGS=["-g2"])
+    if (env["target"] == "release"):
+        if (env["optimize"] == "speed"): #optimize for speed (default)
+            env.Prepend(CCFLAGS=['-O3'])
+        else: #optimize for size
+            env.Prepend(CCFLAGS=['-Os'])
 
-    elif env["target"] == "release_debug":
-        env.Prepend(CCFLAGS=["-O2", "-DDEBUG_ENABLED"])
-        if env["debug_symbols"] == "yes":
-            env.Prepend(CCFLAGS=["-g1"])
-        if env["debug_symbols"] == "full":
-            env.Prepend(CCFLAGS=["-g2"])
+        if (env["debug_symbols"] == "yes"):
+            env.Prepend(CCFLAGS=['-g1'])
+        if (env["debug_symbols"] == "full"):
+            env.Prepend(CCFLAGS=['-g2'])
 
-    elif env["target"] == "debug":
-        env.Prepend(CCFLAGS=["-g3", "-DDEBUG_ENABLED", "-DDEBUG_MEMORY_ENABLED"])
+    elif (env["target"] == "release_debug"):
+        if (env["optimize"] == "speed"): #optimize for speed (default)
+            env.Prepend(CCFLAGS=['-O2'])
+        else: #optimize for size
+            env.Prepend(CCFLAGS=['-Os'])
+        env.Prepend(CPPDEFINES=['DEBUG_ENABLED'])
+
+        if (env["debug_symbols"] == "yes"):
+            env.Prepend(CCFLAGS=['-g1'])
+        if (env["debug_symbols"] == "full"):
+            env.Prepend(CCFLAGS=['-g2'])
+
+    elif (env["target"] == "debug"):
+        env.Prepend(CCFLAGS=['-g3'])
+        env.Prepend(CPPDEFINES=['DEBUG_ENABLED', 'DEBUG_MEMORY_ENABLED'])
 
     ## Architecture
 
@@ -61,8 +79,35 @@ def configure(env):
 
     ## Compiler configuration
 
-    env["CC"] = "gcc"
-    env["CXX"] = "g++"
+    if env['use_ubsan'] or env['use_asan'] or env['use_lsan'] or env['use_tsan']:
+        env.extra_suffix += "s"
+
+        if env['use_ubsan']:
+            env.Append(CCFLAGS=['-fsanitize=undefined'])
+            env.Append(LINKFLAGS=['-fsanitize=undefined'])
+
+        if env['use_asan']:
+            env.Append(CCFLAGS=['-fsanitize=address'])
+            env.Append(LINKFLAGS=['-fsanitize=address'])
+
+        if env['use_lsan']:
+            env.Append(CCFLAGS=['-fsanitize=leak'])
+            env.Append(LINKFLAGS=['-fsanitize=leak'])
+
+        if env['use_tsan']:
+            env.Append(CCFLAGS=['-fsanitize=thread'])
+            env.Append(LINKFLAGS=['-fsanitize=thread'])
+
+    if env['use_lto']:
+        if env.GetOption("num_jobs") > 1:
+            env.Append(CCFLAGS=['-flto'])
+            env.Append(LINKFLAGS=['-flto=' + str(env.GetOption("num_jobs"))])
+        else:
+            env.Append(CCFLAGS=['-flto'])
+            env.Append(LINKFLAGS=['-flto'])
+
+    env.Append(CCFLAGS=['-pipe'])
+    env.Append(LINKFLAGS=['-pipe'])
 
     ## Dependencies
 

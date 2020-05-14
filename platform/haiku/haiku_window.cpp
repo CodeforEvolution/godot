@@ -38,8 +38,7 @@
 #include "main/main.h"
 
 HaikuWindow::HaikuWindow(BRect p_frame)
-	:
-	BWindow(p_frame, "Godot", B_TITLED_WINDOW, B_QUIT_ON_WINDOW_CLOSE) {
+		: BWindow(p_frame, "Godot", B_TITLED_WINDOW, B_QUIT_ON_WINDOW_CLOSE) {
 	last_mouse_pos_valid = false;
 	last_buttons_state = 0;
 	last_button_mask = 0;
@@ -71,7 +70,8 @@ bool HaikuWindow::QuitRequested() {
 	return false;
 }
 
-void HaikuWindow::DispatchMessage(BMessage *message, BHandler *handler) {
+//void HaikuWindow::DispatchMessage(BMessage *message, BHandler *handler) {
+void HaikuWindow::MessageReceived(BMessage *message) {
 	switch (message->what) {
 		case B_MOUSE_DOWN:
 		case B_MOUSE_UP:
@@ -98,17 +98,18 @@ void HaikuWindow::DispatchMessage(BMessage *message, BHandler *handler) {
 		case B_WINDOW_RESIZED:
 			HandleWindowResized(message);
 			break;
-			
+
 		case B_WINDOW_ACTIVATED:
 			HandleWindowActivated(message);
 			break;
-			
+
 		case B_SIMPLE_DATA:
 			HandleDragData(message);
 			break;
 
 		default:
-			BWindow::DispatchMessage(message, handler);
+			//BWindow::DispatchMessage(message, handler);
+			BWindow::MessageReceived(message);
 	}
 }
 
@@ -122,14 +123,6 @@ void HaikuWindow::HandleMouseButton(BMessage *message) {
 	uint32 buttons = message->FindInt32("buttons");
 	uint32 button = buttons ^ last_buttons_state;
 	last_buttons_state = buttons;
-
-	// TODO: implement the mouse_mode checks
-	/*
-	if (mouse_mode == MOUSE_MODE_CAPTURED) {
-		event.xbutton.x=last_mouse_pos.x;
-		event.xbutton.y=last_mouse_pos.y;
-	}
-	*/
 
 	Ref<InputEventMouseButton> mouse_event;
 	mouse_event.instance();
@@ -166,17 +159,17 @@ void HaikuWindow::HandleMouseButton(BMessage *message) {
 }
 
 void HaikuWindow::HandleMouseMoved(BMessage *message) {
-	uint32 transit;
-	if (message->FindInt32("be:transit", &transit) == B_OK) {
-		if (transit == B_ENTERED_VIEW) {
-			OS::get_singleton()->get_main_loop()->notification(
-				MainLoop::NOTIFICATION_WM_MOUSE_ENTER);
-		} else if (transit == B_EXITED_VIEW) {
-			OS::get_singleton()->get_main_loop()->notification(	
-				MainLoop::NOTIFICATION_WM_MOUSE_EXIT);
+	if (main_loop) {
+		uint32 transit = 0;
+		if (message->FindInt32("be:transit", transit) == B_OK) {
+			if (transit == B_ENTERED_VIEW) {
+				main_loop->notification(MainLoop::NOTIFICATION_WM_MOUSE_ENTER);
+			} else if (transit == B_EXITED_VIEW) {
+				main_loop->notification(MainLoop::NOTIFICATION_WM_MOUSE_EXIT);
+			}
 		}
 	}
-	
+
 	BPoint where;
 	// Is it tablet time?
 	if ((message->FindFloat("be:tablet_x", &where.x) != B_OK)
@@ -346,12 +339,14 @@ void HaikuWindow::HandleWindowResized(BMessage *message) {
 
 void HaikuWindow::HandleWindowActivated(BMessage *message) {
 	bool active = false;
-	
+
 	if (message->FindBool("active", &active) != B_OK)
 		return;
-	
-	OS::get_singleton()->get_main_loop()->notification(active ? 
-			MainLoop::NOTIFICATION_WM_FOCUS_IN : MainLoop::NOTIFICATION_WM_FOCUS_OUT);
+
+	if (main_loop) {
+		main_loop->notification(active ? MainLoop::NOTIFICATION_WM_FOCUS_IN :
+			MainLoop::NOTIFICATION_WM_FOCUS_OUT);
+	}
 }
 
 void HaikuWindow::HandleDragData(BMessage *message) {
@@ -359,20 +354,20 @@ void HaikuWindow::HandleDragData(BMessage *message) {
 	BEntry entry;
 	entry_ref ref;
 	int32 index = 0;
-	
+
 	Vector<String> files;
 	while (message->FindRef("refs", index++, &ref) == B_OK) {
-		if (entry.SetTo(&ref) != B_OK ||
-			entry.GetPath(&path) != B_OK) {
+		if (entry.SetTo(&ref) != B_OK || entry.GetPath(&path) != B_OK) {
 			continue;
 		}
-		
+
 		String file = path.Path();
 		files.push_back(file);
 	}
-	
-	if (files.size())
+
+	if (OS::get_singleton()->get_main_loop() != NULL && files.size()) {
 		OS::get_singleton()->get_main_loop()->drop_files(files, 0);
+	}
 }
 
 inline void HaikuWindow::GetKeyModifierState(Ref<InputEventWithModifiers> event, uint32 p_state) {

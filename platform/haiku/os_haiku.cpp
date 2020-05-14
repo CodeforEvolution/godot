@@ -56,7 +56,6 @@ OS_Haiku::OS_Haiku() {
 	AudioDriverManager::add_driver(&driver_media_kit);
 #endif
 
-	minimized = false;
 	window_focused = true;
 	mouse_mode = MOUSE_MODE_VISIBLE;
 };
@@ -136,11 +135,8 @@ Error OS_Haiku::initialize(const VideoMode &p_desired, int p_video_driver, int p
 
 #if defined(OPENGL_ENABLED)
 	context_gl = memnew(ContextGL_Haiku(window));
-	context_gl->initialize();
-	context_gl->make_current();
-	context_gl->set_use_vsync(current_video_mode.use_vsync);
 
-	if (RasterizerGLES2::is_viable() == OK) {
+	if (context_gl->initialize() == OK && RasterizerGLES2::is_viable() == OK) {
 		RasterizerGLES2::register_config();
 		RasterizerGLES2::make_current();
 	} else {
@@ -148,6 +144,10 @@ Error OS_Haiku::initialize(const VideoMode &p_desired, int p_video_driver, int p
 			"Unable to initialize video driver");
 		return ERR_UNAVAILABLE;
 	}
+
+	video_driver_index = p_video_driver;
+
+	context_gl->set_use_vsync(current_video_mode.use_vsync);
 #endif
 
 	visual_server = memnew(VisualServerRaster);
@@ -157,8 +157,6 @@ Error OS_Haiku::initialize(const VideoMode &p_desired, int p_video_driver, int p
 	}
 
 	ERR_FAIL_COND_V(!visual_server, ERR_UNAVAILABLE);
-
-	video_driver_index = p_video_driver;
 
 	input = memnew(InputDefault);
 	window->SetInput(input);
@@ -220,7 +218,7 @@ void OS_Haiku::make_rendering_thread() {
 }
 
 bool OS_Haiku::can_draw() const {
-	return !minimized;
+	return !window->IsMinimized();
 }
 
 void OS_Haiku::swap_buffers() {
@@ -464,14 +462,14 @@ bool OS_Haiku::is_window_resizable() const {
 }
 
 void OS_Haiku::set_window_minimized(bool p_enabled) {
-	if (minimized == p_enabled)
+	if (window->IsMinimized() == p_enabled)
 		return;
 
 	window->Minimize(p_enabled);
 }
 
 bool OS_Haiku::is_window_minimized() const {
-	return minimized;
+	return window->IsMinimized();
 }
 
 void OS_Haiku::set_window_maximized(bool p_enabled) {
@@ -555,7 +553,7 @@ String OS_Haiku::get_locale() const {
 }
 
 void OS_Haiku::set_video_mode(const VideoMode &p_video_mode, int p_screen) {
-	ERR_PRINT("set_video_mode() DEPRECATED");
+	WARN_DEPRECATED;
 }
 
 OS::VideoMode OS_Haiku::get_video_mode(int p_screen) const {
@@ -563,7 +561,7 @@ OS::VideoMode OS_Haiku::get_video_mode(int p_screen) const {
 }
 
 void OS_Haiku::get_fullscreen_mode_list(List<VideoMode> *p_list, int p_screen) const {
-	ERR_PRINT("get_fullscreen_mode_list() DEPRECATED");
+	WARN_DEPRECATED;
 }
 
 String OS_Haiku::get_executable_path() const {
@@ -602,7 +600,7 @@ String OS_Haiku::get_data_path() const {
 	if (has_environment("XDG_DATA_HOME")) {
 		return get_environment("XDG_DATA_HOME");
 	} else if (has_environment("HOME")) {
-		return get_environment("HOME").plus_file("config/data");
+		return get_environment("HOME").plus_file("config/non-packaged/data");
 	} else {
 		return get_config_path();
 	}

@@ -197,7 +197,7 @@ void finalize_physics() {
 	memdelete(physics_2d_server);
 }
 
-//#define DEBUG_INIT
+#define DEBUG_INIT
 #ifdef DEBUG_INIT
 #define MAIN_PRINT(m_txt) print_line(m_txt)
 #else

@@ -33,10 +33,13 @@
 #if defined(OPENGL_ENABLED)
 
 ContextGL_Haiku::ContextGL_Haiku(HaikuWindow *p_window) {
+	WARN_PRINT("Construct GL context");
+
 	window = p_window;
 
 	uint32 type = BGL_RGB | BGL_DOUBLE | BGL_DEPTH;
 	view = new HaikuGLView(window->Bounds(), type);
+	view->LockGL();
 
 	use_vsync = false;
 }
@@ -45,6 +48,8 @@ ContextGL_Haiku::~ContextGL_Haiku() {
 }
 
 Error ContextGL_Haiku::initialize() {
+	WARN_PRINT("Start up GL context");
+
 	window->AddChild(view);
 	window->SetHaikuGLView(view);
 
@@ -52,26 +57,38 @@ Error ContextGL_Haiku::initialize() {
 }
 
 void ContextGL_Haiku::release_current() {
+	WARN_PRINT("Unlock GL context");
+
 	view->UnlockGL();
 }
 
 void ContextGL_Haiku::make_current() {
+	WARN_PRINT("Lock GL context");
+
 	view->LockGL();
 }
 
 void ContextGL_Haiku::swap_buffers() {
+	WARN_PRINT("Swap Buffers for GL context");
+
 	view->SwapBuffers(use_vsync);
 }
 
 int ContextGL_Haiku::get_window_width() {
+	WARN_PRINT("Request window width holding GL context");
+
 	return window->Bounds().IntegerWidth();
 }
 
 int ContextGL_Haiku::get_window_height() {
+	WARN_PRINT("Request window height holding GL context");
+
 	return window->Bounds().IntegerHeight();
 }
 
 void ContextGL_Haiku::set_use_vsync(bool p_use) {
+	WARN_PRINT("Changed vertical sync mode for GL context");
+
 	use_vsync = p_use;
 }
 

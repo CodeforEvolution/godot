@@ -38,15 +38,15 @@
 #include <MidiRoster.h>
 
 class GodotMidiLocalConsumer : public BMidiLocalConsumer {
-	
+
 	MIDIDriverMIDI2Kit *midi_driver
-	
+
 public:
 	GodotMidiLocalConsumer(const char *name, MIDIDriverMIDI2Kit *p_midi_driver) :
 			BMidiLocalConsumer(name),
 			midi_driver(p_midi_driver) {
 	};
-	
+
 	void Data(uchar *data, size_t length, bool atomic, bigtime_t time) {
 
 		if (atomic) {
@@ -56,19 +56,19 @@ public:
 };
 
 Error MIDIDriverMIDI2Kit::open() {
-	
+
 	input_consumer = new GodotMidiLocalConsumer("Godot Input", this);
 	if (input_consumer == NULL) {
 		ERR_PRINTS("GodotMidiLocalConsumer construction failed");
 		return ERR_CANT_OPEN;
 	}
-	
+
 	if (!input_consumer->IsValid()) {
 		ERR_PRINTS("GodotMidiLocalConsumer failed to start up");
 		input_consumer->Release();
 		return ERR_CANT_OPEN;
 	}
-	
+
 	if (input_consumer->Register() != B_OK) {
 		ERR_PRINTS("GodotMidiLocalConsumer failed to register itself with BMidiRoster");
 		input_consumer->Release();
@@ -87,7 +87,7 @@ Error MIDIDriverMIDI2Kit::open() {
 			more_producers = false;
 		}
 	}
-	
+
 	return OK;
 }
 
@@ -99,7 +99,7 @@ void MIDIDriverMIDI2Kit::close() {
 		if (producer != NULL) {
 			producer->Disconnect(input_consumer);
 			producer->Release();
-		}	
+		}
 	}
 	connected_sources.clear();
 
@@ -117,7 +117,7 @@ PoolStringArray MIDIDriverMIDI2Kit::get_connected_inputs() {
 			list.push_back(producer->Name());
 		}
 	}
-	
+
 	return list;
 }
 
