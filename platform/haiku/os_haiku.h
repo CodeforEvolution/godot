@@ -62,7 +62,7 @@ private:
 #endif
 
 #ifdef MIDI2_KIT_ENABLED
-	MIDIDriverMIDI2Kit midi_driver;
+	MIDIDriverMIDI2Kit driver_midi2_kit;
 #endif
 
 #if defined(OPENGL_ENABLED)

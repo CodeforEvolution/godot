@@ -32,24 +32,24 @@
 
 #include "os_haiku.h"
 
+#include <app/Application.h>
+#include <app/Clipboard.h>
+#include <app/Cursor.h>
+#include <interface/Alert.h>
+#include <interface/Point.h>
+#include <interface/Screen.h>
+#include <kernel/fs_info.h>
+#include <locale/LocaleRoster.h>
+#include <storage/Directory.h>
+#include <storage/Entry.h>
+#include <storage/FindDirectory.h>
+#include <storage/Path.h>
+#include <storage/Volume.h>
+
 #include "main/main.h"
 #include "servers/physics/physics_server_sw.h"
 #include "servers/visual/visual_server_raster.h"
 #include "servers/visual/visual_server_wrap_mt.h"
-
-#include <Alert.h>
-#include <Application.h>
-#include <Clipboard.h>
-#include <Cursor.h>
-#include <Directory.h>
-#include <Entry.h>
-#include <FindDirectory.h>
-#include <kernel/fs_info.h>
-#include <LocaleRoster.h>
-#include <Path.h>
-#include <Point.h>
-#include <Screen.h>
-#include <Volume.h>
 
 OS_Haiku::OS_Haiku() {
 #ifdef MEDIA_KIT_ENABLED
@@ -61,8 +61,9 @@ OS_Haiku::OS_Haiku() {
 };
 
 void OS_Haiku::run() {
-	if (!main_loop)
+	if (!main_loop) {
 		return;
+	}
 
 	main_loop->init();
 	app->Run();
@@ -171,7 +172,7 @@ Error OS_Haiku::initialize(const VideoMode &p_desired, int p_video_driver, int p
 
 void OS_Haiku::finalize() {
 #ifdef MIDI2_KIT_ENABLED
-	midi_driver.close();
+	driver_midi2_kit.close();
 #endif
 
 	if (main_loop) {
@@ -226,8 +227,9 @@ void OS_Haiku::swap_buffers() {
 }
 
 void OS_Haiku::set_clipboard(const String &p_text) {
-	if (!be_clipboard->Lock())
+	if (!be_clipboard->Lock()) {
 		return;
+	}
 
 	be_clipboard->Clear();
 	BMessage *clipData = be_clipboard->Data();
@@ -243,8 +245,9 @@ void OS_Haiku::set_clipboard(const String &p_text) {
 }
 
 String OS_Haiku::get_clipboard() const {
-	if (!be_clipboard->Lock())
+	if (!be_clipboard->Lock()) {
 		return "";
+	}
 
 	BMessage *clipData = be_clipboard->Data();
 	if (clipData == NULL)
@@ -265,7 +268,6 @@ String OS_Haiku::get_clipboard() const {
 }
 
 void OS_Haiku::warp_mouse_position(const Point2 &p_to) {
-
 	if (mouse_mode == MOUSE_MODE_CAPTURED) {
 		window->SetLastMousePosition(p_to);
 	} else {
@@ -288,8 +290,9 @@ int OS_Haiku::get_mouse_button_state() const {
 void OS_Haiku::set_cursor_shape(CursorShape p_shape) {
 	ERR_FAIL_INDEX(p_shape, CURSOR_MAX);
 
-	if (cursor_shape == p_shape)
+	if (cursor_shape == p_shape) {
 		return;
+	}
 
 	static const BCursorID native_cursors[CURSOR_MAX] = {
 		B_CURSOR_ID_SYSTEM_DEFAULT,
@@ -322,11 +325,13 @@ OS::CursorShape OS_Haiku::get_cursor_shape() const {
 
 void OS_Haiku::set_custom_mouse_cursor(const RES &p_cursor, CursorShape p_shape, const Vector2 &p_hotspot) {
 	// TODO - Functionality not currently available on Haiku
+	ERR_PRINT("set_custom_mouse_cursor() is not supported for the Haiku platform.");
 }
 
 void OS_Haiku::set_mouse_mode(MouseMode p_mode) {
-	if (p_mode == mouse_mode)
+	if (p_mode == mouse_mode) {
 		return;
+	}
 
 	// The cursor can not be shy, when the mode is VISIBLE or CONFINED
 	bool showCursor = (p_mode == MOUSE_MODE_VISIBLE ||
@@ -442,8 +447,9 @@ bool OS_Haiku::is_window_fullscreen() const {
 }
 
 void OS_Haiku::set_window_resizable(bool p_enabled) {
-	if (current_video_mode.resizable == p_enabled)
+	if (current_video_mode.resizable == p_enabled) {
 		return;
+	}
 
 	uint32 flags = window->Flags();
 
@@ -462,8 +468,9 @@ bool OS_Haiku::is_window_resizable() const {
 }
 
 void OS_Haiku::set_window_minimized(bool p_enabled) {
-	if (window->IsMinimized() == p_enabled)
+	if (window->IsMinimized() == p_enabled) {
 		return;
+	}
 
 	window->Minimize(p_enabled);
 }
@@ -473,8 +480,9 @@ bool OS_Haiku::is_window_minimized() const {
 }
 
 void OS_Haiku::set_window_maximized(bool p_enabled) {
-	if (current_video_mode.maximized == p_enabled)
+	if (current_video_mode.maximized == p_enabled) {
 		return;
+	}
 
 	// This is kind of weird...we just have to assume that this will maximize
 	// and unmaximize the window when the time comes around...We could manually
@@ -487,14 +495,16 @@ bool OS_Haiku::is_window_maximized() const {
 }
 
 void OS_Haiku::set_window_always_on_top(bool p_enabled) {
-	if (current_video_mode.always_on_top == p_enabled)
+	if (current_video_mode.always_on_top == p_enabled) {
 		return;
+	}
 
 	status_t result = window->SetFeel(p_enabled ? B_FLOATING_ALL_WINDOW_FEEL :
 		B_NORMAL_WINDOW_FEEL);
 
-	if (result == B_OK)
+	if (result == B_OK) {
 		current_video_mode.always_on_top = p_enabled;
+	}
 }
 
 bool OS_Haiku::is_window_always_on_top() const {
@@ -506,14 +516,16 @@ bool OS_Haiku::is_window_focused() const {
 }
 
 void OS_Haiku::set_borderless_window(bool p_borderless) {
-	if (current_video_mode.borderless_window == p_borderless)
+	if (current_video_mode.borderless_window == p_borderless) {
 		return;
+	}
 
 	status_t result = window->SetLook(p_borderless ? B_NO_BORDER_WINDOW_LOOK :
 		B_DOCUMENT_WINDOW_LOOK);
 
-	if (result == B_OK)
+	if (result == B_OK) {
 		current_video_mode.borderless_window = p_borderless;
+	}
 }
 
 bool OS_Haiku::get_borderless_window() {
@@ -619,28 +631,33 @@ String OS_Haiku::get_cache_path() const {
 Error OS_Haiku::move_to_trash(const String &p_path) {
 	// Find device the path is on
 	dev_t trashDev = dev_for_path(p_path.utf8().get_data());
-	if (trashDev < B_NO_ERROR)
+	if (trashDev < B_NO_ERROR) {
 		return FAILED;
+	}
 
 	// Create BVolume representing the volume the path is located on
 	BVolume trashVol;
-	if (trashVol.SetTo(trashDev) != B_OK)
+	if (trashVol.SetTo(trashDev) != B_OK) {
 		return FAILED;
+	}
 
 	// Find trash directory on volume
 	BPath trashPath;
-	if (find_directory(B_TRASH_DIRECTORY, &trashPath, true, &trashVol) != B_OK)
+	if (find_directory(B_TRASH_DIRECTORY, &trashPath, true, &trashVol) != B_OK) {
 		return FAILED;
+	}
 
 	// Create BDirectory representing the trash directory
 	BDirectory trashDir;
-	if (trashDir.SetTo(trashPath.Path()) != B_OK)
+	if (trashDir.SetTo(trashPath.Path()) != B_OK) {
 		return FAILED;
+	}
 
 	// Create BEntry representing file to move to trash
 	BEntry fileEntry;
-	if (fileEntry.SetTo(p_path.utf8().get_data()) != B_OK)
+	if (fileEntry.SetTo(p_path.utf8().get_data()) != B_OK) {
 		return FAILED;
+	}
 
 	// Do it now!
 	if (fileEntry.MoveTo(&trashDir) != B_OK) {

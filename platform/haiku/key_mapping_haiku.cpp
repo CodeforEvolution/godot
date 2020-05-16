@@ -28,7 +28,7 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#include <InterfaceDefs.h>
+#include <interface/InterfaceDefs.h>
 
 #include "core/os/keyboard.h"
 #include "key_mapping_haiku.h"

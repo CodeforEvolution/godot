@@ -3,13 +3,15 @@
 Import("env")
 
 common_haiku = [
-    'os_haiku.cpp',
+    'audio_driver_media_kit.cpp',
     'context_gl_haiku.cpp',
+	'dir_access_haiku.cpp',
     'haiku_application.cpp',
-    'haiku_window.cpp',
     'haiku_gl_view.cpp',
+    'haiku_window.cpp',
     'key_mapping_haiku.cpp',
-    'audio_driver_media_kit.cpp'
+	'midi_driver_midi2_kit.cpp',
+    'os_haiku.cpp'
 ]
 
 target = env.add_program("#bin/godot", ["godot_haiku.cpp"] + common_haiku)

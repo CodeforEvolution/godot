@@ -31,9 +31,8 @@
 #ifndef HAIKU_DIRECT_WINDOW_H
 #define HAIKU_DIRECT_WINDOW_H
 
+#include <interface/Window.h>
 #include <kernel/image.h> // needed for image_id
-
-#include <Window.h>
 
 #include "core/os/os.h"
 #include "main/input_default.h"

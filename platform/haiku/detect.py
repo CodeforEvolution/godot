@@ -13,7 +13,6 @@ def get_name():
 
 
 def can_build():
-
     if (sys.platform.startswith('haiku')):
         return True
 
@@ -41,7 +40,6 @@ def get_flags():
 
 
 def configure(env):
-
     ## Build type
 
     if (env["target"] == "release"):
@@ -108,6 +106,9 @@ def configure(env):
 
     env.Append(CCFLAGS=['-pipe'])
     env.Append(LINKFLAGS=['-pipe'])
+
+    env["CC"] = "gcc-x86"
+    env["CXX"] = "g++-x86"
 
     ## Dependencies
 
@@ -195,6 +196,6 @@ def configure(env):
 
     env.Prepend(CPPPATH=['#platform/haiku'])
     env.Append(CPPDEFINES=['UNIX_ENABLED', 'OPENGL_ENABLED', 'GLES_ENABLED'])
-    env.Append(CPPDEFINES=['MEDIA_KIT_ENABLED'])
+    env.Append(CPPDEFINES=['MEDIA_KIT_ENABLED', 'MIDI2_KIT_ENABLED'])
     env.Append(CPPDEFINES=['PTHREAD_NO_RENAME'])  # TODO: enable when we have pthread_setname_np
-    env.Append(LIBS=['be', 'game', 'media', 'network', 'bnetapi', 'z', 'GL'])
+    env.Append(LIBS=['be', 'game', 'media', 'midi2', 'network', 'bnetapi', 'z', 'GL'])

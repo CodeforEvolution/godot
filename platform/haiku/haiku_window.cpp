@@ -28,9 +28,9 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#include <Entry.h>
-#include <Path.h>
-#include <UnicodeChar.h>
+#include <locale/UnicodeChar.h>
+#include <storage/Entry.h>
+#include <storage/Path.h>
 
 #include "core/os/keyboard.h"
 #include "haiku_window.h"

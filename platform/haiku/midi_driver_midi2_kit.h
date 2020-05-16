@@ -36,12 +36,11 @@
 #include "core/os/midi_driver.h"
 #include "core/vector.h"
 
+#include <midi2/MidiConsumer.h>
+
 #include <stdio.h>
 
-#include <MidiLocalConsumer.h>
-
 class MIDIDriverMIDI2Kit : public MIDIDriver {
-
 	Vector<int32> connected_sources;
 
 	BMidiLocalConsumer *input_consumer;

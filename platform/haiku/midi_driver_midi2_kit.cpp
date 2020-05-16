@@ -32,14 +32,13 @@
 
 #include "midi_driver_midi2_kit.h"
 
+#include <midi2/MidiProducer.h>
+#include <midi2/MidiRoster.h>
+
 #include "core/print_string.h"
 
-#include <MidiProducer.h>
-#include <MidiRoster.h>
-
 class GodotMidiLocalConsumer : public BMidiLocalConsumer {
-
-	MIDIDriverMIDI2Kit *midi_driver
+	MIDIDriverMIDI2Kit *midi_driver;
 
 public:
 	GodotMidiLocalConsumer(const char *name, MIDIDriverMIDI2Kit *p_midi_driver) :
@@ -48,7 +47,6 @@ public:
 	};
 
 	void Data(uchar *data, size_t length, bool atomic, bigtime_t time) {
-
 		if (atomic) {
 			midi_driver->receive_input_packet(time, data, length);
 		}
@@ -56,7 +54,6 @@ public:
 };
 
 Error MIDIDriverMIDI2Kit::open() {
-
 	input_consumer = new GodotMidiLocalConsumer("Godot Input", this);
 	if (input_consumer == NULL) {
 		ERR_PRINTS("GodotMidiLocalConsumer construction failed");
@@ -92,7 +89,6 @@ Error MIDIDriverMIDI2Kit::open() {
 }
 
 void MIDIDriverMIDI2Kit::close() {
-
 	for (int index = 0; index < connected_sources.size(); index++) {
 		int32 producer_id = connected_sources[index];
 		BMidiProducer *producer = BMidiRoster::FindProducer(producer_id);
@@ -108,7 +104,6 @@ void MIDIDriverMIDI2Kit::close() {
 }
 
 PoolStringArray MIDIDriverMIDI2Kit::get_connected_inputs() {
-
 	PoolStringArray list;
 	for (int index = 0; index < connected_sources.size(); index++) {
 		int32 producer_id = connected_sources[index];
