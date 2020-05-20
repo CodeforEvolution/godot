@@ -32,6 +32,9 @@
 
 #include "os_haiku.h"
 
+#include "dir_access_haiku.h"
+#include "thread_haiku.h"
+
 #include <app/Application.h>
 #include <app/Clipboard.h>
 #include <app/Cursor.h>
@@ -90,6 +93,12 @@ int OS_Haiku::get_current_video_driver() const {
 
 void OS_Haiku::initialize_core() {
 	OS_Unix::initialize_core();
+
+	DirAccess::make_default<DirAccessHaiku>(DirAccess::ACCESS_RESOURCES);
+	DirAccess::make_default<DirAccessHaiku>(DirAccess::ACCESS_USERDATA);
+	DirAccess::make_default<DirAccessHaiku>(DirAccess::ACCESS_FILESYSTEM);
+
+	ThreadHaiku::make_default();
 }
 
 Error OS_Haiku::initialize(const VideoMode &p_desired, int p_video_driver, int p_audio_driver) {

@@ -126,7 +126,9 @@ void OS_Unix::initialize_core() {
 	MutexDummy::make_default();
 	RWLockDummy::make_default();
 #else
+#ifndef HAIKU_ENABLED
 	ThreadPosix::make_default();
+#endif
 #if !defined(OSX_ENABLED) && !defined(IPHONE_ENABLED)
 	SemaphorePosix::make_default();
 #endif
