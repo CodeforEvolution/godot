@@ -69,13 +69,14 @@ public:
 	~HaikuWindow();
 
 	void SetHaikuGLView(HaikuGLView *p_view);
+	void StartMessageRunner();
+	void StopMessageRunner();
 	void SetInput(InputDefault *p_input);
 	inline void SetGrabCursorMode(bool p_enabled) { cursor_grab_mode = p_enabled; };
 	void SetMainLoop(MainLoop *p_main_loop);
 	inline void SetVideoMode(OS::VideoMode *video_mode) { current_video_mode = video_mode; };
 	virtual bool QuitRequested();
-	//virtual void DispatchMessage(BMessage *message, BHandler *handler);
-	virtual void MessageReceived(BMessage *message);
+	virtual void DispatchMessage(BMessage *message, BHandler *handler);
 
 	inline void SetLastMousePosition(Point2i p_last_position) { last_mouse_position = p_last_position; };
 	inline Point2i GetLastMousePosition() { return last_mouse_position; };

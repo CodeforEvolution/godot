@@ -42,3 +42,7 @@ void HaikuApplication::AboutRequested() {
 		OS::get_singleton()->get_main_loop()->notification(MainLoop::NOTIFICATION_WM_ABOUT);
 	}
 }
+
+void HaikuApplication::DispatchMessage(BMessage *message, BHandler *handler) {
+	BApplication::DispatchMessage(message, handler);
+}

@@ -99,8 +99,10 @@ void MIDIDriverMIDI2Kit::close() {
 	}
 	connected_sources.clear();
 
-	input_consumer->Unregister();
-	input_consumer->Release();
+	if (input_consumer != NULL) {
+		input_consumer->Unregister();
+		input_consumer->Release();
+	}
 }
 
 PoolStringArray MIDIDriverMIDI2Kit::get_connected_inputs() {

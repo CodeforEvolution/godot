@@ -45,9 +45,9 @@ HaikuWindow::HaikuWindow(BRect p_frame)
 	last_key_modifier_state = 0;
 	cursor_grab_mode = false;
 
-	view = NULL;
-	input = NULL;
-	main_loop = NULL;
+	view = nullptr;
+	input = nullptr;
+	main_loop = nullptr;
 }
 
 HaikuWindow::~HaikuWindow() {
@@ -70,8 +70,11 @@ bool HaikuWindow::QuitRequested() {
 	return false;
 }
 
-//void HaikuWindow::DispatchMessage(BMessage *message, BHandler *handler) {
-void HaikuWindow::MessageReceived(BMessage *message) {
+void HaikuWindow::DispatchMessage(BMessage *message, BHandler *handler) {
+	if (Main::iteration()) {
+		Quit();
+	}
+	
 	switch (message->what) {
 		case B_MOUSE_DOWN:
 		case B_MOUSE_UP:
@@ -108,8 +111,7 @@ void HaikuWindow::MessageReceived(BMessage *message) {
 			break;
 
 		default:
-			//BWindow::DispatchMessage(message, handler);
-			BWindow::MessageReceived(message);
+			BWindow::DispatchMessage(message, handler);
 	}
 }
 

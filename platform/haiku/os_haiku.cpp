@@ -69,6 +69,7 @@ void OS_Haiku::run() {
 	}
 
 	main_loop->init();
+
 	app->Run();
 
 	delete app;
@@ -160,18 +161,19 @@ Error OS_Haiku::initialize(const VideoMode &p_desired, int p_video_driver, int p
 	context_gl->set_use_vsync(current_video_mode.use_vsync);
 #endif
 
-	visual_server = memnew(VisualServerRaster);
-	// FIXME: Reimplement threaded rendering
-	if (get_render_thread_mode() != RENDER_THREAD_UNSAFE) {
-		visual_server = memnew(VisualServerWrapMT(visual_server, false));
-	}
-
-	ERR_FAIL_COND_V(!visual_server, ERR_UNAVAILABLE);
-
 	input = memnew(InputDefault);
 	window->SetInput(input);
 
 	window->Show();
+
+	visual_server = memnew(VisualServerRaster);
+	if (get_render_thread_mode() != RENDER_THREAD_UNSAFE) {
+		visual_server = memnew(VisualServerWrapMT(visual_server,
+			get_render_thread_mode() == RENDER_SEPARATE_THREAD));
+	}
+
+	ERR_FAIL_COND_V(!visual_server, ERR_UNAVAILABLE);
+
 	visual_server->init();
 
 	AudioDriverManager::initialize(p_audio_driver);
@@ -180,6 +182,8 @@ Error OS_Haiku::initialize(const VideoMode &p_desired, int p_video_driver, int p
 }
 
 void OS_Haiku::finalize() {
+	WARN_PRINT("Finalizing!!");
+
 #ifdef MIDI2_KIT_ENABLED
 	driver_midi2_kit.close();
 #endif
@@ -201,6 +205,7 @@ void OS_Haiku::finalize() {
 }
 
 void OS_Haiku::set_main_loop(MainLoop *p_main_loop) {
+	WARN_PRINT("Setup Main Loop!");
 	main_loop = p_main_loop;
 	input->set_main_loop(p_main_loop);
 	window->SetMainLoop(p_main_loop);
@@ -228,6 +233,7 @@ void OS_Haiku::make_rendering_thread() {
 }
 
 bool OS_Haiku::can_draw() const {
+	WARN_PRINT("Can we draw?");
 	return !window->IsMinimized();
 }
 
@@ -332,9 +338,11 @@ OS::CursorShape OS_Haiku::get_cursor_shape() const {
 	return cursor_shape;
 }
 
-void OS_Haiku::set_custom_mouse_cursor(const RES &p_cursor, CursorShape p_shape, const Vector2 &p_hotspot) {
+void OS_Haiku::set_custom_mouse_cursor(const RES &p_cursor, CursorShape p_shape,
+	const Vector2 &p_hotspot) {
 	// TODO - Functionality not currently available on Haiku
-	ERR_PRINT("set_custom_mouse_cursor() is not supported for the Haiku platform.");
+	ERR_PRINT(
+		"set_custom_mouse_cursor() is not supported for the Haiku platform.");
 }
 
 void OS_Haiku::set_mouse_mode(MouseMode p_mode) {
