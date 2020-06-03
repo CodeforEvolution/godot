@@ -67,14 +67,10 @@ void HaikuWindow::SetMainLoop(MainLoop *p_main_loop) {
 
 bool HaikuWindow::QuitRequested() {
 	main_loop->notification(MainLoop::NOTIFICATION_WM_QUIT_REQUEST);
-	return false;
+	return true;
 }
 
 void HaikuWindow::DispatchMessage(BMessage *message, BHandler *handler) {
-	if (Main::iteration()) {
-		Quit();
-	}
-	
 	switch (message->what) {
 		case B_MOUSE_DOWN:
 		case B_MOUSE_UP:

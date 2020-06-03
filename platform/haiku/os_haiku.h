@@ -43,6 +43,8 @@
 
 class OS_Haiku : public OS_Unix {
 private:
+	static status_t BApplication_runner(void *p_app);
+
 	HaikuApplication *app;
 	HaikuWindow *window;
 	MainLoop *main_loop;
@@ -56,6 +58,9 @@ private:
 	Size2 min_size;
 	Size2 max_size;
 	bool window_focused;
+	
+	bool force_quit;
+	thread_id bapp_id;
 
 #ifdef MEDIA_KIT_ENABLED
 	AudioDriverMediaKit driver_media_kit;

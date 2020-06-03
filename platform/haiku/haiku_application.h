@@ -39,7 +39,6 @@ public:
 						HaikuApplication();
 
 	virtual void 		AboutRequested();
-	virtual	void		DispatchMessage(BMessage *message, BHandler *handler);
 };
 
 #endif

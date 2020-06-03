@@ -38,11 +38,7 @@ HaikuApplication::HaikuApplication()
 }
 
 void HaikuApplication::AboutRequested() {
-	if (OS::get_singleton()->get_main_loop() != NULL) {
+	if (OS::get_singleton()->get_main_loop() != nullptr) {
 		OS::get_singleton()->get_main_loop()->notification(MainLoop::NOTIFICATION_WM_ABOUT);
 	}
-}
-
-void HaikuApplication::DispatchMessage(BMessage *message, BHandler *handler) {
-	BApplication::DispatchMessage(message, handler);
 }

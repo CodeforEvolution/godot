@@ -64,16 +64,50 @@ OS_Haiku::OS_Haiku() {
 };
 
 void OS_Haiku::run() {
+	force_quit = false;
+	bapp_id = -1;
+	
 	if (!main_loop) {
 		return;
 	}
 
 	main_loop->init();
 
-	app->Run();
+	bapp_id = spawn_thread(OS_Haiku::BApplication_runner,
+		"BApplication runner", B_NORMAL_PRIORITY, app);
+		
+	if (bapp_id < B_NO_ERROR) {
+		OS::get_singleton()->alert("There was a serious error that occured when creating the main BApplication thread for Godot!");
+	} else {
+		resume_thread(bapp_id);
+		app->UnlockLooper();
+		
+		// We are pretty important...
+		set_thread_priority(find_thread(NULL), B_URGENT_DISPLAY_PRIORITY);
+		
+		while (!force_quit) {
+			if (Main::iteration()) {
+				break;
+			}
+		};
+		
+		// And not anymore...
+		set_thread_priority(find_thread(NULL), B_NORMAL_PRIORITY);
+		
+		wait_for_thread(bapp_id, nullptr);	
+	}
 
-	delete app;
 	main_loop->finish();
+	delete app;
+}
+
+status_t OS_Haiku::BApplication_runner(void *p_app) {	
+	BApplication *app = (BApplication *)p_app;
+
+	app->LockLooper();
+	app->Run();
+	
+	return B_OK;
 }
 
 String OS_Haiku::get_name() const {
@@ -164,8 +198,6 @@ Error OS_Haiku::initialize(const VideoMode &p_desired, int p_video_driver, int p
 	input = memnew(InputDefault);
 	window->SetInput(input);
 
-	window->Show();
-
 	visual_server = memnew(VisualServerRaster);
 	if (get_render_thread_mode() != RENDER_THREAD_UNSAFE) {
 		visual_server = memnew(VisualServerWrapMT(visual_server,
@@ -175,6 +207,8 @@ Error OS_Haiku::initialize(const VideoMode &p_desired, int p_video_driver, int p
 	ERR_FAIL_COND_V(!visual_server, ERR_UNAVAILABLE);
 
 	visual_server->init();
+	
+	window->Show();
 
 	AudioDriverManager::initialize(p_audio_driver);
 
@@ -233,7 +267,6 @@ void OS_Haiku::make_rendering_thread() {
 }
 
 bool OS_Haiku::can_draw() const {
-	WARN_PRINT("Can we draw?");
 	return !window->IsMinimized();
 }
 
