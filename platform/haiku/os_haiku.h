@@ -58,6 +58,7 @@ private:
 	Size2 min_size;
 	Size2 max_size;
 	bool window_focused;
+	BRect previous_frame;
 	
 	bool force_quit;
 	thread_id bapp_id;

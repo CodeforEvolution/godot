@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  haiku_direct_window.h                                                */
+/*  haiku_window.h                                                       */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -31,7 +31,7 @@
 #ifndef HAIKU_DIRECT_WINDOW_H
 #define HAIKU_DIRECT_WINDOW_H
 
-#include <interface/Window.h>
+#include <game/DirectWindow.h>
 #include <kernel/image.h> // needed for image_id
 
 #include "core/os/os.h"
@@ -39,7 +39,7 @@
 
 #include "haiku_gl_view.h"
 
-class HaikuWindow : public BWindow {
+class HaikuWindow : public BDirectWindow {
 private:
 	Point2i last_mouse_position;
 	bool last_mouse_pos_valid;
@@ -75,6 +75,8 @@ public:
 	inline void SetGrabCursorMode(bool p_enabled) { cursor_grab_mode = p_enabled; };
 	void SetMainLoop(MainLoop *p_main_loop);
 	inline void SetVideoMode(OS::VideoMode *video_mode) { current_video_mode = video_mode; };
+	
+	// virtual void DirectConnected(direct_buffer_info *p_info);
 	virtual bool QuitRequested();
 	virtual void DispatchMessage(BMessage *message, BHandler *handler);
 

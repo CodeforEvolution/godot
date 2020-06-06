@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  haiku_direct_window.cpp                                              */
+/*  haiku_window.cpp                                                     */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -38,7 +38,7 @@
 #include "main/main.h"
 
 HaikuWindow::HaikuWindow(BRect p_frame)
-		: BWindow(p_frame, "Godot", B_TITLED_WINDOW, B_QUIT_ON_WINDOW_CLOSE) {
+		: BDirectWindow(p_frame, "Godot", B_TITLED_WINDOW, B_QUIT_ON_WINDOW_CLOSE) {
 	last_mouse_pos_valid = false;
 	last_buttons_state = 0;
 	last_button_mask = 0;
@@ -64,6 +64,14 @@ void HaikuWindow::SetInput(InputDefault *p_input) {
 void HaikuWindow::SetMainLoop(MainLoop *p_main_loop) {
 	main_loop = p_main_loop;
 }
+
+/* Currently not working due to drawing issues...
+void HaikuWindow::DirectConnected(direct_buffer_info *p_info) {
+	view->EnableDirectMode(true);
+	view->DirectConnected(p_info);
+	BDirectWindow::DirectConnected(p_info);	
+}
+*/
 
 bool HaikuWindow::QuitRequested() {
 	main_loop->notification(MainLoop::NOTIFICATION_WM_QUIT_REQUEST);
@@ -107,7 +115,7 @@ void HaikuWindow::DispatchMessage(BMessage *message, BHandler *handler) {
 			break;
 
 		default:
-			BWindow::DispatchMessage(message, handler);
+			BDirectWindow::DispatchMessage(message, handler);
 	}
 }
 

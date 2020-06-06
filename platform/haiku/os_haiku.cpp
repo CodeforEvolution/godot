@@ -60,6 +60,7 @@ OS_Haiku::OS_Haiku() {
 #endif
 
 	window_focused = true;
+	previous_frame = BRect();
 	mouse_mode = MOUSE_MODE_VISIBLE;
 };
 
@@ -87,6 +88,8 @@ void OS_Haiku::run() {
 		
 		while (!force_quit) {
 			if (Main::iteration()) {
+				app->LockLooper();
+				app->Quit();
 				break;
 			}
 		};
@@ -488,7 +491,7 @@ void OS_Haiku::set_window_position(const Point2 &p_position) {
 }
 
 void OS_Haiku::set_window_fullscreen(bool p_enabled) {
-	//window->SetFullScreen(p_enabled); Urghhh...I miss BDirectWindow...
+	window->SetFullScreen(p_enabled);
 	current_video_mode.fullscreen = p_enabled;
 }
 
@@ -534,10 +537,20 @@ void OS_Haiku::set_window_maximized(bool p_enabled) {
 		return;
 	}
 
-	// This is kind of weird...we just have to assume that this will maximize
-	// and unmaximize the window when the time comes around...We could manually
-	// handle a Zoom() call if wanted however.
-	window->Zoom();
+	BRect new_frame = BRect();
+
+	if (p_enabled) {
+		previous_frame = window->Frame();
+
+		BScreen *screen = new BScreen(window);
+		new_frame = screen->Frame();
+		delete screen;
+	} else {
+		new_frame = previous_frame;
+	}
+
+	window->Zoom(new_frame.LeftTop(), new_frame.Width(), new_frame.Height());
+	current_video_mode.maximized = p_enabled;
 }
 
 bool OS_Haiku::is_window_maximized() const {

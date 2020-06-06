@@ -197,4 +197,4 @@ def configure(env):
     env.Prepend(CPPPATH=['#platform/haiku'])
     env.Append(CPPDEFINES=['HAIKU_ENABLED', 'UNIX_ENABLED', 'OPENGL_ENABLED', 'GLES_ENABLED'])
     env.Append(CPPDEFINES=['MEDIA_KIT_ENABLED', 'MIDI2_KIT_ENABLED'])
-    env.Append(LIBS=['be', 'game', 'media', 'midi2', 'network', 'bnetapi', 'z', 'GL'])
+    env.Append(LIBS=['be', 'game', 'media', 'midi2', 'network', 'z', 'GL'])
