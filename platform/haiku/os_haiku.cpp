@@ -96,12 +96,9 @@ void OS_Haiku::run() {
 		
 		// And not anymore...
 		set_thread_priority(find_thread(NULL), B_NORMAL_PRIORITY);
-		
-		wait_for_thread(bapp_id, nullptr);	
 	}
 
 	main_loop->finish();
-	delete app;
 }
 
 status_t OS_Haiku::BApplication_runner(void *p_app) {	
@@ -203,8 +200,8 @@ Error OS_Haiku::initialize(const VideoMode &p_desired, int p_video_driver, int p
 
 	visual_server = memnew(VisualServerRaster);
 	if (get_render_thread_mode() != RENDER_THREAD_UNSAFE) {
-		visual_server = memnew(VisualServerWrapMT(visual_server,
-			get_render_thread_mode() == RENDER_SEPARATE_THREAD));
+		visual_server = memnew(VisualServerWrapMT(visual_server, true));
+			//get_render_thread_mode() == RENDER_SEPARATE_THREAD));
 	}
 
 	ERR_FAIL_COND_V(!visual_server, ERR_UNAVAILABLE);
@@ -639,24 +636,6 @@ void OS_Haiku::get_fullscreen_mode_list(List<VideoMode> *p_list, int p_screen) c
 	WARN_DEPRECATED;
 }
 
-String OS_Haiku::get_executable_path() const {
-	char pathBuffer[B_PATH_NAME_LENGTH];
-	image_info info;
-	int32 cookie = 0;
-
-	while (get_next_image_info(B_CURRENT_TEAM, &cookie, &info) == B_OK) {
-		if (info.type == B_APP_IMAGE) {
-			strlcpy(pathBuffer, info.name, B_PATH_NAME_LENGTH - 1);
-
-			String path;
-			path.parse_utf8(pathBuffer);
-			return path;
-		}
-	}
-
-	return OS::get_executable_path();
-}
-
 bool OS_Haiku::_check_internal_feature_support(const String &p_feature) {
 	return p_feature == "pc";
 }
@@ -689,6 +668,59 @@ String OS_Haiku::get_cache_path() const {
 	} else {
 		return get_config_path();
 	}
+}
+
+String OS_Haiku::get_executable_path() const {
+	char pathBuffer[B_PATH_NAME_LENGTH];
+	image_info info;
+	int32 cookie = 0;
+
+	while (get_next_image_info(B_CURRENT_TEAM, &cookie, &info) == B_OK) {
+		if (info.type == B_APP_IMAGE) {
+			strlcpy(pathBuffer, info.name, B_PATH_NAME_LENGTH - 1);
+
+			String path;
+			path.parse_utf8(pathBuffer);
+			return path;
+		}
+	}
+
+	return OS::get_executable_path();
+}
+
+String OS_Haiku::get_system_dir(SystemDir p_dir) const {
+	BPath sysPath;
+	if (find_directory(B_USER_DIRECTORY, &sysPath, true) != B_OK) {
+		return String();
+	}
+
+	switch (p_dir) {
+		case SYSTEM_DIR_DESKTOP: {
+			sysPath.Append("/Desktop", true);
+		} break;
+		case SYSTEM_DIR_DOCUMENTS: {
+			sysPath.Append("/Documents", true);
+		} break;
+		case SYSTEM_DIR_DOWNLOADS: {
+			sysPath.Append("/Downloads", true);
+		} break;
+		case SYSTEM_DIR_MOVIES: {
+			sysPath.Append("/Media/Movies", true);
+		} break;
+		case SYSTEM_DIR_MUSIC: {
+			sysPath.Append("/Media/Music", true);
+		} break;
+		case SYSTEM_DIR_PICTURES: {
+			sysPath.Append("/Media/Pictures", true);
+		} break;
+		default: {
+			return String();	
+		}
+	}
+	
+	String ret;
+	ret.parse_utf8(sysPath.Path());
+	return ret;
 }
 
 Error OS_Haiku::move_to_trash(const String &p_path) {

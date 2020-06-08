@@ -75,7 +75,7 @@ void HaikuWindow::DirectConnected(direct_buffer_info *p_info) {
 
 bool HaikuWindow::QuitRequested() {
 	main_loop->notification(MainLoop::NOTIFICATION_WM_QUIT_REQUEST);
-	return true;
+	return false;
 }
 
 void HaikuWindow::DispatchMessage(BMessage *message, BHandler *handler) {

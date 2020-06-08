@@ -161,6 +161,7 @@ public:
 	virtual String get_data_path() const;
 	virtual String get_cache_path() const;
 	virtual String get_executable_path() const;
+	virtual String get_system_dir(SystemDir p_dir) const;
 
 	virtual Error move_to_trash(const String &p_path);
 };
