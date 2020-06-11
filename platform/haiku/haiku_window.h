@@ -76,7 +76,7 @@ public:
 	void SetMainLoop(MainLoop *p_main_loop);
 	inline void SetVideoMode(OS::VideoMode *video_mode) { current_video_mode = video_mode; };
 	
-	// virtual void DirectConnected(direct_buffer_info *p_info);
+	virtual void DirectConnected(direct_buffer_info *p_info);
 	virtual bool QuitRequested();
 	virtual void DispatchMessage(BMessage *message, BHandler *handler);
 

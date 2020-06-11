@@ -83,9 +83,6 @@ void OS_Haiku::run() {
 		resume_thread(bapp_id);
 		app->UnlockLooper();
 		
-		// We are pretty important...
-		set_thread_priority(find_thread(NULL), B_URGENT_DISPLAY_PRIORITY);
-		
 		while (!force_quit) {
 			if (Main::iteration()) {
 				app->LockLooper();
@@ -93,9 +90,6 @@ void OS_Haiku::run() {
 				break;
 			}
 		};
-		
-		// And not anymore...
-		set_thread_priority(find_thread(NULL), B_NORMAL_PRIORITY);
 	}
 
 	main_loop->finish();

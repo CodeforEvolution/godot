@@ -55,6 +55,7 @@ HaikuWindow::~HaikuWindow() {
 
 void HaikuWindow::SetHaikuGLView(HaikuGLView *p_view) {
 	view = p_view;
+	//view->EnableDirectMode(true);
 }
 
 void HaikuWindow::SetInput(InputDefault *p_input) {
@@ -65,13 +66,12 @@ void HaikuWindow::SetMainLoop(MainLoop *p_main_loop) {
 	main_loop = p_main_loop;
 }
 
-/* Currently not working due to drawing issues...
+// Currently not working due to drawing issues...
 void HaikuWindow::DirectConnected(direct_buffer_info *p_info) {
-	view->EnableDirectMode(true);
-	view->DirectConnected(p_info);
-	BDirectWindow::DirectConnected(p_info);	
+	//view->EnableDirectMode(true);
+	//view->DirectConnected(p_info);
 }
-*/
+
 
 bool HaikuWindow::QuitRequested() {
 	main_loop->notification(MainLoop::NOTIFICATION_WM_QUIT_REQUEST);
