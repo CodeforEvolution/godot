@@ -210,8 +210,6 @@ Error OS_Haiku::initialize(const VideoMode &p_desired, int p_video_driver, int p
 }
 
 void OS_Haiku::finalize() {
-	WARN_PRINT("Finalizing!!");
-
 #ifdef MIDI2_KIT_ENABLED
 	driver_midi2_kit.close();
 #endif
@@ -233,7 +231,6 @@ void OS_Haiku::finalize() {
 }
 
 void OS_Haiku::set_main_loop(MainLoop *p_main_loop) {
-	WARN_PRINT("Setup Main Loop!");
 	main_loop = p_main_loop;
 	input->set_main_loop(p_main_loop);
 	window->SetMainLoop(p_main_loop);

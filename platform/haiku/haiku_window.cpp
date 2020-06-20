@@ -161,7 +161,9 @@ void HaikuWindow::HandleMouseButton(BMessage *message) {
 			mouse_event->set_doubleclick(true);
 	}
 
-	input->parse_input_event(mouse_event);
+	if (input) {
+		input->parse_input_event(mouse_event);
+	}
 }
 
 void HaikuWindow::HandleMouseMoved(BMessage *message) {
@@ -224,7 +226,9 @@ void HaikuWindow::HandleMouseMoved(BMessage *message) {
 	    && message->FindFloat("be:tablet_tilt_y", &tiltY) == B_OK)
 		motion_event->set_tilt(Vector2(tiltX, tiltY));
 
-	input->parse_input_event(motion_event);
+	if (input) {
+		input->parse_input_event(motion_event);
+	}
 }
 
 void HaikuWindow::HandleMouseWheelChanged(BMessage *message) {
@@ -251,7 +255,9 @@ void HaikuWindow::HandleMouseWheelChanged(BMessage *message) {
 		input->parse_input_event(scroll_event);
 
 		scroll_event->set_pressed(false);
-		input->parse_input_event(scroll_event);
+		if (input) {
+			input->parse_input_event(scroll_event);
+		}
 	}
 
 	// and horizontal scrolling! Is this the 21st century or what???
@@ -264,7 +270,9 @@ void HaikuWindow::HandleMouseWheelChanged(BMessage *message) {
 		input->parse_input_event(scroll_event);
 
 		scroll_event->set_pressed(false);
-		input->parse_input_event(scroll_event);
+		if (input) {
+			input->parse_input_event(scroll_event);
+		}
 	}
 }
 
@@ -301,7 +309,9 @@ void HaikuWindow::HandleKeyboardEvent(BMessage *message) {
 		event->set_shift(true);
 	}
 
-	input->parse_input_event(event);
+	if (input) {
+		input->parse_input_event(event);
+	}
 }
 
 void HaikuWindow::HandleKeyboardModifierEvent(BMessage *message) {
@@ -327,7 +337,9 @@ void HaikuWindow::HandleKeyboardModifierEvent(BMessage *message) {
 	event->set_control(key & B_CONTROL_KEY);
 	event->set_command(key & B_COMMAND_KEY);
 
-	input->parse_input_event(event);
+	if (input) {
+		input->parse_input_event(event);
+	}
 }
 
 void HaikuWindow::HandleWindowResized(BMessage *message) {

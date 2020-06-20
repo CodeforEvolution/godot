@@ -10,7 +10,7 @@ resource app_version {
        long_info = "An advanced, feature packed, multi-platform 2D and 3D game engine."
 };
 
-resource app_flags B_SINGLE_LAUNCH;
+resource app_flags B_MULTIPLE_LAUNCH;
 
 resource app_signature "application/x-vnd.godot";
 
